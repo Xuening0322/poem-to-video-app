@@ -1,0 +1,183 @@
+/* Global settings for root elements and colors */
+
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap');
+
+:root {
+  --max-width: 800px; /* Adjusted for consistency across the layout */
+  --padding: 20px;
+  --border-radius: 12px;
+  --background-color: #f9f9f9; /* Light gray background for better contrast */
+  --text-color: #333; /* Dark gray for text for readability */
+  --input-background-color: #fff; /* White background for inputs for clarity */
+  --input-border-color: #ccc; /* Light gray border for inputs */
+  --font-text-area: 'Roboto Mono', monospace; /* Define the font for text areas */
+}
+
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: var(--background-color);
+  color: var(--text-color);
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: var(--padding);
+}
+
+.section {
+  padding: 20px;  /* Increased internal padding */
+  margin-bottom: 30px;  /* Increased space between sections */
+  background-color: #fff;  /* Assuming a white background */
+  border-radius: 8px;  /* Rounded corners for aesthetics */
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);  /* Subtle shadow for depth */
+}
+
+.header {
+  text-align: center;
+}
+
+.settings-sidebar, .analysis-form, .display-analysis {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 20px 0;
+  padding: var(--padding);
+  background-color: var(--input-background-color);
+  border-radius: var(--border-radius);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.input-group {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+.input-group label {
+  flex-basis: 30%;
+}
+
+.input-group input, .input-group select, .input-group textarea {
+  flex: 1;
+  padding: 10px;
+  margin-left: 10px;
+  background-color: var(--input-background-color);
+  border: 1px solid var(--input-border-color);
+  border-radius: var(--border-radius);
+}
+
+button {
+  padding: 10px 20px;
+  color: #fff;
+  background-color: #007bff;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+
+/* components/SettingsSidebar.css */
+
+
+.input-row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.settings-label {
+  display: block;
+  margin-bottom: 10px;
+}
+
+.settings-input,
+.settings-select {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.settings-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url('data:image/svg+xml;utf8,<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9l6 6 6-6"></path></svg>');
+  background-repeat: no-repeat;
+  background-position-x: calc(100% - 10px);
+  background-position-y: center;
+  background-size: 14px;
+  padding-right: 30px;
+}
+
+.settings-select::-ms-expand {
+  display: none;
+}
+
+
+/* components/AnalysisForm.css */
+
+.analysis-form {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 20px 0;
+  padding: var(--padding);
+  background-color: var(--input-background-color);
+  border-radius: var(--border-radius);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.analysis-textarea {
+  width: calc(100% - 20px); /* Adjusted width to account for padding */
+  font-family: var(--font-text-area);
+  padding: 10px;
+  margin-bottom: 15px;
+  background-color: var(--input-background-color);
+  border: 1px solid var(--input-border-color);
+  border-radius: var(--border-radius);
+}
+
+/* components/DisplayAnalysis.css */
+
+.display-analysis {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 20px 0;
+  padding: var(--padding);
+  background-color: var(--input-background-color);
+  border-radius: var(--border-radius);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.display-analysis h3 {
+  margin-top: 20px;
+}
+
+.display-analysis label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.display-analysis textarea {
+  font-family: var(--font-text-area);
+  width: calc(100% - 20px); /* Adjusted width to account for padding */
+  padding: 10px;
+  margin-bottom: 15px;
+  border: 1px solid var(--input-border-color);
+  border-radius: var(--border-radius);
+}
+.display-analysis audio,
+.display-analysis video {
+  width: 100%;
+  margin-top: 30px;
+  margin-bottom: 30px;
+}
