@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@dropb/ffprobe": "^3.0.0",
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "axios": "^1.6.8",
     "fluent-ffmpeg": "^2.1.2",

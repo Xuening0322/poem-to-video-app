@@ -19,7 +19,7 @@ const SettingsSidebar = ({ onSettingsChange }) => {
       <div className="input-row">
         <label className="settings-label">
           Duration (seconds):
-          <input type="number" min="5" max="15" defaultValue="30" step="5" onChange={handleDurationChange} className="settings-input" />
+          <input type="number" min="5" max="15" defaultValue="15" step="5" onChange={handleDurationChange} className="settings-input" />
         </label>
         <label className="settings-label">
           BPM:

@@ -81,57 +81,90 @@ export default function handler(req, res) {
         res.status(500).json({ error: 'Server error' });
     }
 }
+async function processVideo(videoPath, musicPath, voicePath, outputPath) {
+    try {
+        // Load the voice clip to get its duration
+        const voiceInfo = await new Promise((resolve, reject) => {
+            ffmpeg.ffprobe(voicePath, (err, metadata) => {
+                if (err) reject(err);
+                else resolve(metadata);
+            });
+        });
+        const voiceDuration = voiceInfo.format.duration;
 
+        // Load the video clip to get its duration
+        const videoInfo = await new Promise((resolve, reject) => {
+            ffmpeg.ffprobe(videoPath, (err, metadata) => {
+                if (err) reject(err);
+                else resolve(metadata);
+            });
+        });
+        const videoDuration = videoInfo.format.duration;
 
-function processVideo(videoPath, musicPath, voicePath, outputPath) {
-    return new Promise((resolve, reject) => {
-        ffmpeg()
-            .input(videoPath)
-            .inputOptions(['-stream_loop -1']) // Loop video indefinitely
-            .input(musicPath)
-            .input(voicePath)
-            .complexFilter([
-                // Fade effects and volume adjustment for music
-                {
-                    filter: 'afade',
-                    options: { t: 'in', ss: 0, d: 3 },
-                    inputs: '1:a',
-                    outputs: 'fadedIn'
-                },
-                {
-                    filter: 'afade',
-                    options: { t: 'out', st: 3, d: 3 },
-                    inputs: 'fadedIn',
-                    outputs: 'fadedOut'
-                },
-                { filter: 'volume', options: '0.2', inputs: 'fadedOut', outputs: 'musicWithVolume' },
-                
-                // Mixing audio tracks
-                // Use the 'shortest' duration setting to ensure the mixed output matches the duration of the shortest input track
-                { filter: 'amix', options: { inputs: 2, duration: 'shortest' }, inputs: ['musicWithVolume', '2:a'], outputs: 'mixed' },
+        // Calculate the number of times the video needs to be looped to cover the voice duration
+        const loopsRequired = Math.ceil(voiceDuration / videoDuration);
 
-                // Ensuring video covers the mixed audio duration
-                {
-                    filter: 'setpts',
-                    options: 'PTS-STARTPTS',
-                    inputs: '0:v',
-                    outputs: 'videoLooped'
-                }
-            ])
-            .outputOptions([
-                '-map [videoLooped]',
-                '-map [mixed]',
-                '-shortest'  // Ensure the output duration matches the shortest of the audio or video streams
-            ])
-            .output(outputPath)
-            .on('end', () => {
-                console.log("ffmpeg process finished. Output file created at:", outputPath);
-                resolve(outputPath);
-            })
-            .on('error', (err) => {
-                console.error("Error during ffmpeg processing:", err);
-                reject(err);
-            })
-            .run();
-    });
+        // Input options to loop the video the required number of times
+        const inputOptions = [];
+        for (let i = 0; i < loopsRequired; i++) {
+            inputOptions.push('-stream_loop', '1');
+        }
+
+        // Use fluent-ffmpeg to process the video
+        await new Promise((resolve, reject) => {
+            ffmpeg()
+                .input(videoPath)
+                .inputOptions(inputOptions) // Loop the video the required number of times
+                .input(musicPath)
+                .input(voicePath)
+                .complexFilter([
+                    // Fade effects and volume adjustment for music
+                    {
+                        filter: 'afade',
+                        options: { t: 'in', ss: 0, d: 3 },
+                        inputs: '1:a',
+                        outputs: 'fadedIn'
+                    },
+                    {
+                        filter: 'afade',
+                        options: { t: 'out', st: 3, d: 3 },
+                        inputs: 'fadedIn',
+                        outputs: 'fadedOut'
+                    },
+                    { filter: 'volume', options: '0.2', inputs: 'fadedOut', outputs: 'musicWithVolume' },
+                    
+                    // Mixing audio tracks
+                    // Use the 'shortest' duration setting to ensure the mixed output matches the duration of the shortest input track
+                    { filter: 'amix', options: { inputs: 2, duration: 'shortest' }, inputs: ['musicWithVolume', '2:a'], outputs: 'mixed' },
+
+                    // Ensuring video covers the mixed audio duration
+                    {
+                        filter: 'setpts',
+                        options: 'PTS-STARTPTS',
+                        inputs: '0:v',
+                        outputs: 'videoLooped'
+                    }
+                ])
+                .outputOptions([
+                    '-map', '[videoLooped]',
+                    '-map', '[mixed]',
+                    '-shortest'  // Ensure the output duration matches the shortest of the audio or video streams
+                ])
+                .output(outputPath)
+                .on('end', () => {
+                    console.log("ffmpeg process finished. Output file created at:", outputPath);
+                    resolve(outputPath);
+                })
+                .on('error', (err) => {
+                    console.error("Error during ffmpeg processing:", err);
+                    reject(err);
+                })
+                .run();
+        });
+        
+        return outputPath;
+    } catch (error) {
+        console.error("Error processing video:", error);
+        throw error;
+    }
 }
