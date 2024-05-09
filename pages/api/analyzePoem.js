@@ -38,16 +38,12 @@ export default async function handler(req, res) {
       res.status(200).json({ analysis });
   } catch (error) {
       if (error.response) {
-          // The request was made and the server responded with a status code
-          // that falls out of the range of 2xx
           console.error("Error data:", error.response.data);
           res.status(error.response.status).json({ message: error.message, details: error.response.data });
       } else if (error.request) {
-          // The request was made but no response was received
           console.error("Error request:", error.request);
           res.status(500).json({ message: "No response received from the server." });
       } else {
-          // Something happened in setting up the request that triggered an Error
           console.error("Error message:", error.message);
           res.status(500).json({ message: "An error occurred while setting up the request." });
       }

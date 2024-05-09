@@ -55,8 +55,6 @@ export default async function handler(req, res) {
 }
 
 
-
-// This function processes the video by adjusting speeds and mixing audio.
 async function processVideo(videoPath, musicPath, voicePath) {
     const [videoDuration, musicDuration, voiceDuration] = await Promise.all([
         getMediaDuration(videoPath),
@@ -82,13 +80,12 @@ async function getMediaDuration(filePath) {
     });
 }
 
-// This function adjusts the video speed to match the music duration.
 async function adjustVideoSpeed(videoPath, speedFactor) {
     const adjustedVideoPath = path.join(__dirname, '../../../../public/assets', 'adjusted_video.mp4');
     await new Promise((resolve, reject) => {
         ffmpeg(videoPath)
             .outputOptions([
-                `-filter:v setpts=${(1 / speedFactor).toFixed(3)}*PTS`, // Correctly adjust video speed
+                `-filter:v setpts=${(1 / speedFactor).toFixed(3)}*PTS`,
                 '-an' // Disable audio to avoid desynchronization issues
             ])
             .on('end', resolve)
@@ -101,8 +98,6 @@ async function adjustVideoSpeed(videoPath, speedFactor) {
     return adjustedVideoPath;
 }
 
-
-// This function concatenates, loops, and mixes video and audio according to requirements.
 async function concatenateAndMix(adjustedVideoPath, musicPath, voicePath, loopsRequired, voiceDuration) {
     const finalVideoPath = path.join(__dirname, '../../../../public/assets', 'final_movie.mp4');
 
@@ -111,7 +106,7 @@ async function concatenateAndMix(adjustedVideoPath, musicPath, voicePath, loopsR
     await new Promise((resolve, reject) => {
         ffmpeg(musicPath)
             .inputOptions(['-stream_loop', loopsRequired - 1])  // Loop music to match at least the voice duration
-            .audioFilters('volume=0.2')  // Control volume to avoid clipping
+            .audioFilters('volume=0.2')  // Control volume
             .outputOptions(['-t', voiceDuration])  // Set duration to voice length
             .save(loopedMusicPath)
             .on('end', resolve)
@@ -132,18 +127,18 @@ async function concatenateAndMix(adjustedVideoPath, musicPath, voicePath, loopsR
     // Mixing looped video, looped music, and voice into the final video
     await new Promise((resolve, reject) => {
         ffmpeg()
-            .input(loopedVideoPath)  // Looped video
-            .input(loopedMusicPath)  // Looped music
-            .input(voicePath)  // Voice track
+            .input(loopedVideoPath)
+            .input(loopedMusicPath)
+            .input(voicePath)
             .complexFilter([
                 '[1:a][2:a]amix=inputs=2:duration=first[audio]'  // Mix music and voice
             ])
             .outputOptions([
-                '-map 0:v',  // Video from looped video
+                '-map 0:v',  // Looped video
                 '-map [audio]',  // Mixed audio
                 '-c:v libx264',  // Video codec
                 '-c:a aac',  // Audio codec
-                '-strict experimental',  // Use experimental features if necessary
+                '-strict experimental',
                 '-shortest'  // End output based on the shortest input stream
             ])
             .on('end', () => resolve(finalVideoPath))

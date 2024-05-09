@@ -1,7 +1,7 @@
 // pages/api/generateVoice.js
 
 const axios = require("axios");
-const fs = require("fs").promises;  // Note the use of .promises
+const fs = require("fs").promises;
 const path = require("path");
 
 export default async function handler(req, res) {
