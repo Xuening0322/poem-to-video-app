@@ -16,41 +16,18 @@ async function downloadFile(url, outputFilePath) {
     });
 
     const writer = response.data.pipe(fs.createWriteStream(outputFilePath));
-
     return new Promise((resolve, reject) => {
-        writer.on('finish', resolve);
+        writer.on('finish', () => resolve(outputFilePath));
         writer.on('error', reject);
     });
 }
 
-
-function downloadVideo(url) {
-    const videoPath = path.join(__dirname, '../../../../public/assets', 'downloadedVideo.mp4');
-    return downloadFile(url, videoPath)
-        .then(() => videoPath)
-        .catch(error => {
-            console.error('Failed to download video:', error);
-            throw error;  // Re-throw the error to handle it in the calling context
-        });
+async function downloadVoice(url) {
+    const voicePath = path.join(__dirname, '../../../../public/assets', 'generatedVoice.mp3');
+    return (url, voicePath);
 }
 
-function downloadMusic(url) {
-    const musicPath = path.join(__dirname, '../../../../public/assets', 'downloadedMusic.mp3');
-    return downloadFile(url, musicPath)
-        .then(() => musicPath)
-        .catch(error => {
-            console.error('Failed to download music:', error);
-            throw error;  // Re-throw the error to handle it in the calling context
-        });
-}
-
-function downloadVoice(url) {
-    const voicePath = path.join(__dirname, '../../../../public', url);
-    console.log(voicePath);
-    return voicePath;
-}
-
-export default function handler(req, res) {
+export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).end('Method Not Allowed');
     }
@@ -58,113 +35,124 @@ export default function handler(req, res) {
     try {
         const { videoUrl, musicUrl, voiceUrl } = req.body;
 
-        // Handle downloads concurrently (if needed)
-        Promise.all([
-            downloadVideo(videoUrl),
-            downloadMusic(musicUrl),
+        const [videoPath, musicPath, voicePath] = await Promise.all([
+            downloadFile(videoUrl, path.join(__dirname, '../../../../public/assets', 'downloadedVideo.mp4')),
+            downloadFile(musicUrl, path.join(__dirname, '../../../../public/assets', 'downloadedMusic.mp3')),
             downloadVoice(voiceUrl),
-        ])
-        .then(([videoPath, musicPath, voicePath]) => {
-            console.log("Files prepared for processing:", videoPath, musicPath, voicePath);
-            return processVideo(videoPath, musicPath, voicePath, path.join(process.cwd(), 'public', 'assets', 'finalOutput.mp4'));
-        })
-        .then(outputPath => {
-            console.log("Video processing complete, file available at:", outputPath);
-            res.status(200).json({ url: `/assets/finalOutput.mp4` });
-        })
-        .catch(error => {
-            console.error('Error in processing:', error);
-            res.status(500).json({ error: 'Failed to process video' });
-        });
+        ]);
+
+        const outputPath = await processVideo(videoPath, musicPath, voicePath);
+        console.log("output path: ", outputPath);
+
+        const publicDirectory = path.join(__dirname, '../../../../public');
+        const relativeOutputPath = "/" + path.relative(publicDirectory, outputPath);
+        console.log("final output path: ", relativeOutputPath);
+        res.status(200).json({ url: relativeOutputPath });
     } catch (error) {
-        console.error('Server error:', error);
-        res.status(500).json({ error: 'Server error' });
+        console.error('Error in processing:', error);
+        res.status(500).json({ error: 'Failed to process video' });
     }
 }
-async function processVideo(videoPath, musicPath, voicePath, outputPath) {
-    try {
-        // Load the voice clip to get its duration
-        const voiceInfo = await new Promise((resolve, reject) => {
-            ffmpeg.ffprobe(voicePath, (err, metadata) => {
-                if (err) reject(err);
-                else resolve(metadata);
-            });
+
+
+
+// This function processes the video by adjusting speeds and mixing audio.
+async function processVideo(videoPath, musicPath, voicePath) {
+    const [videoDuration, musicDuration, voiceDuration] = await Promise.all([
+        getMediaDuration(videoPath),
+        getMediaDuration(musicPath),
+        getMediaDuration(voicePath)
+    ]);
+
+    const speedFactor = videoDuration / musicDuration;
+    const loopsRequired = Math.ceil(voiceDuration / musicDuration);
+
+    const adjustedVideoPath = await adjustVideoSpeed(videoPath, speedFactor);
+    const finalVideoPath = await concatenateAndMix(adjustedVideoPath, musicPath, voicePath, loopsRequired, voiceDuration);
+
+    return finalVideoPath;
+}
+
+async function getMediaDuration(filePath) {
+    return new Promise((resolve, reject) => {
+        ffmpeg.ffprobe(filePath, (err, metadata) => {
+            if (err) reject(err);
+            else resolve(metadata.format.duration);
         });
-        const voiceDuration = voiceInfo.format.duration;
+    });
+}
 
-        // Load the video clip to get its duration
-        const videoInfo = await new Promise((resolve, reject) => {
-            ffmpeg.ffprobe(videoPath, (err, metadata) => {
-                if (err) reject(err);
-                else resolve(metadata);
-            });
-        });
-        const videoDuration = videoInfo.format.duration;
+// This function adjusts the video speed to match the music duration.
+async function adjustVideoSpeed(videoPath, speedFactor) {
+    const adjustedVideoPath = path.join(__dirname, '../../../../public/assets', 'adjusted_video.mp4');
+    await new Promise((resolve, reject) => {
+        ffmpeg(videoPath)
+            .outputOptions([
+                `-filter:v setpts=${(1 / speedFactor).toFixed(3)}*PTS`, // Correctly adjust video speed
+                '-an' // Disable audio to avoid desynchronization issues
+            ])
+            .on('end', resolve)
+            .on('error', (err) => {
+                console.error("Error adjusting video speed:", err);
+                reject(err);
+            })
+            .save(adjustedVideoPath);
+    });
+    return adjustedVideoPath;
+}
 
-        // Calculate the number of times the video needs to be looped to cover the voice duration
-        const loopsRequired = Math.ceil(voiceDuration / videoDuration);
 
-        // Input options to loop the video the required number of times
-        const inputOptions = [];
-        for (let i = 0; i < loopsRequired; i++) {
-            inputOptions.push('-stream_loop', '1');
-        }
+// This function concatenates, loops, and mixes video and audio according to requirements.
+async function concatenateAndMix(adjustedVideoPath, musicPath, voicePath, loopsRequired, voiceDuration) {
+    const finalVideoPath = path.join(__dirname, '../../../../public/assets', 'final_movie.mp4');
 
-        // Use fluent-ffmpeg to process the video
-        await new Promise((resolve, reject) => {
-            ffmpeg()
-                .input(videoPath)
-                .inputOptions(inputOptions) // Loop the video the required number of times
-                .input(musicPath)
-                .input(voicePath)
-                .complexFilter([
-                    // Fade effects and volume adjustment for music
-                    {
-                        filter: 'afade',
-                        options: { t: 'in', ss: 0, d: 3 },
-                        inputs: '1:a',
-                        outputs: 'fadedIn'
-                    },
-                    {
-                        filter: 'afade',
-                        options: { t: 'out', st: 3, d: 3 },
-                        inputs: 'fadedIn',
-                        outputs: 'fadedOut'
-                    },
-                    { filter: 'volume', options: '0.2', inputs: 'fadedOut', outputs: 'musicWithVolume' },
-                    
-                    // Mixing audio tracks
-                    // Use the 'shortest' duration setting to ensure the mixed output matches the duration of the shortest input track
-                    { filter: 'amix', options: { inputs: 2, duration: 'shortest' }, inputs: ['musicWithVolume', '2:a'], outputs: 'mixed' },
+    // Looping the music
+    const loopedMusicPath = path.join(__dirname, '../../../../public/assets', 'looped_music.mp3');
+    await new Promise((resolve, reject) => {
+        ffmpeg(musicPath)
+            .inputOptions(['-stream_loop', loopsRequired - 1])  // Loop music to match at least the voice duration
+            .audioFilters('volume=0.2')  // Control volume to avoid clipping
+            .outputOptions(['-t', voiceDuration])  // Set duration to voice length
+            .save(loopedMusicPath)
+            .on('end', resolve)
+            .on('error', reject);
+    });
 
-                    // Ensuring video covers the mixed audio duration
-                    {
-                        filter: 'setpts',
-                        options: 'PTS-STARTPTS',
-                        inputs: '0:v',
-                        outputs: 'videoLooped'
-                    }
-                ])
-                .outputOptions([
-                    '-map', '[videoLooped]',
-                    '-map', '[mixed]',
-                    '-shortest'  // Ensure the output duration matches the shortest of the audio or video streams
-                ])
-                .output(outputPath)
-                .on('end', () => {
-                    console.log("ffmpeg process finished. Output file created at:", outputPath);
-                    resolve(outputPath);
-                })
-                .on('error', (err) => {
-                    console.error("Error during ffmpeg processing:", err);
-                    reject(err);
-                })
-                .run();
-        });
-        
-        return outputPath;
-    } catch (error) {
-        console.error("Error processing video:", error);
-        throw error;
-    }
+    // Looping the adjusted video
+    const loopedVideoPath = path.join(__dirname, '../../../../public/assets', 'looped_video.mp4');
+    await new Promise((resolve, reject) => {
+        ffmpeg(adjustedVideoPath)
+            .inputOptions(['-stream_loop', loopsRequired - 1])  // Loop video to match at least the voice duration
+            .outputOptions(['-t', voiceDuration])  // Set duration to voice length
+            .save(loopedVideoPath)
+            .on('end', resolve)
+            .on('error', reject);
+    });
+
+    // Mixing looped video, looped music, and voice into the final video
+    await new Promise((resolve, reject) => {
+        ffmpeg()
+            .input(loopedVideoPath)  // Looped video
+            .input(loopedMusicPath)  // Looped music
+            .input(voicePath)  // Voice track
+            .complexFilter([
+                '[1:a][2:a]amix=inputs=2:duration=first[audio]'  // Mix music and voice
+            ])
+            .outputOptions([
+                '-map 0:v',  // Video from looped video
+                '-map [audio]',  // Mixed audio
+                '-c:v libx264',  // Video codec
+                '-c:a aac',  // Audio codec
+                '-strict experimental',  // Use experimental features if necessary
+                '-shortest'  // End output based on the shortest input stream
+            ])
+            .on('end', () => resolve(finalVideoPath))
+            .on('error', (err) => {
+                console.error("ffmpeg error during mixing:", err);
+                reject(err);
+            })
+            .save(finalVideoPath);
+    });
+
+    return finalVideoPath;
 }

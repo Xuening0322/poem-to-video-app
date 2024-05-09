@@ -178,13 +178,16 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
   };
 
   const generateMovie = async () => {
+    if (!videoUrl || !voiceUrl || !musicUrl) {
+      alert('Please generate all necessary files (video, voice, and music) first.');
+      return;
+    }
     const requestBody = {
       videoUrl: videoUrl,
       musicUrl: musicUrl,
       voiceUrl: voiceUrl
     };
-
-
+  
     try {
       const response = await fetch('/api/processVideo', {
         method: 'POST',
@@ -193,18 +196,18 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
         },
         body: JSON.stringify(requestBody)
       });
-
+  
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-
+  
       const result = await response.json();
-      setMovieUrl(result.movieUrl);
-      console.log('Generated Movie:', result);
+      console.log("New movie generated: ", result.url);
+      setMovieUrl(result.url);
     } catch (error) {
       console.error('Error generating movie:', error);
     }
-  };
+  };  
 
 
   return (
