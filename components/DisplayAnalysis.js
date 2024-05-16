@@ -2,31 +2,21 @@
 import React, { useState, useEffect } from 'react';
 
 const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
-  const initialAnalysis = analysis
-    .split('\n')
-    .reduce((acc, line) => {
-      const [key, value] = line.split(':').map((str) => str.trim());
-      acc[key.toLowerCase().replace(/ /g, '')] = value;
-      return acc;
-    }, {});
 
-  // State for each category
   const [themes, setThemes] = useState('');
   const [literals, setLiterals] = useState('');
   const [emotions, setEmotions] = useState('');
   const [musicalTerms, setMusicalTerms] = useState('');
   const [prompt, setPrompt] = useState('');
   const [musicUrl, setMusicUrl] = useState('');
-  const [videoPrompts, setVideoPrompts] = useState([]);  // State to store video prompts
+  const [videoPrompts, setVideoPrompts] = useState([]);
   const [startPrompt, setStartPrompt] = useState('');
   const [endPrompt, setEndPrompt] = useState('');
-  const [videoUrl, setVideoUrl] = useState('');  // State to store the generated video URL
+  const [videoUrl, setVideoUrl] = useState('');
   const [voiceUrl, setVoiceUrl] = useState('');
   const [movieUrl, setMovieUrl] = useState('');
 
 
-
-  // Effect hook to update text area values when `analysis` prop changes
   useEffect(() => {
     if (analysis) {
       const parsedAnalysis = analysis
@@ -47,12 +37,10 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
   useEffect(() => {
     if (musicUrl) {
       console.log("New Music URL set:", musicUrl);
-      // Perform any actions needed when musicUrl changes, e.g., logging, analytics, etc.
     }
-  }, [musicUrl]); // Dependency array ensures this runs only when musicUrl changes
+  }, [musicUrl]);
 
 
-  // Helper function to handle changes in the textareas
   const handleChange = (setter) => (event) => {
     setter(event.target.value);
   };
@@ -70,7 +58,7 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
       duration: duration,
     };
 
-    setMusicUrl(''); // Clear the previous URL while the new one is being fetched
+    setMusicUrl('');
 
     try {
       const response = await fetch('/api/generateMusic', {
@@ -118,7 +106,7 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
         return separatorIndex !== -1 ? prompt.substring(separatorIndex + 1).trim() : '';
       });
 
-      setVideoPrompts(extractedPrompts); // Update state with cleaned prompts
+      setVideoPrompts(extractedPrompts);
       console.log(extractedPrompts);
     } catch (error) {
       console.error('Error generating video prompts:', error);
