@@ -1,10 +1,10 @@
-### Poem-to-Video Generation
+# Poem-to-Video Generation
 
-#### Project Overview
+## Project Overview
 
 This Next.js project, "Poem-to-Video Generation," is designed to analyze poems and generate music videos that reflect the essence, themes, and emotions of the poems. 
 
-#### Getting Started
+### Getting Started
 
 1. **Installation**:
    - Clone the repository
@@ -29,7 +29,7 @@ This Next.js project, "Poem-to-Video Generation," is designed to analyze poems a
      ```
    - Open `http://localhost:3000` in your browser to view the application.
 
-#### Project Structure
+### Project Structure
 
 - `pages/`: Contains the main pages of the application.
   - `index.js`: The main page where users interact with the poem analysis and video generation features.
@@ -39,7 +39,7 @@ This Next.js project, "Poem-to-Video Generation," is designed to analyze poems a
   - `DisplayAnalysis.js`: Displays the results of the poem analysis and controls for generating music and videos.
   - `SettingsSidebar.js`: Sidebar for adjusting settings like BPM, video style, and duration.
 
-#### Key Features
+### Key Features
 
 - **Poem Analysis**: Analyze poems to extract themes, emotions, and other literary elements.
 - **Music Generation**: Convert the analyzed data into a musical format and generate a music track.
