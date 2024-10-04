@@ -13,22 +13,32 @@ export default async function handler(req, res) {
   const { poem } = req.body;
   let poemText = poem.replace(/([.,;:])/g, "$1-------------");
 
+  const voiceId = "GBv7mTt0atIp3Br8iCZE"; // Make sure this is the correct voice ID
+  const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
+
   const payload = {
     text: poemText,
+    model_id: "eleven_monolingual_v1", // You can change this if needed
     voice_settings: {
-      similarity_boost: 0.5,
-      stability: 0.5
+      stability: 0.5,
+      similarity_boost: 0.5
     }
   };
 
   const headers = {
     'xi-api-key': process.env.XI_API_KEY,
+    'Accept': 'audio/mpeg',
     'Content-Type': 'application/json'
   };
 
   try {
-    const response = await axios.post("https://api.elevenlabs.io/v1/text-to-speech/GBv7mTt0atIp3Br8iCZE/stream", payload, { headers, responseType: 'arraybuffer' });
-    const filePath = path.join(__dirname, '../../../../public/assets', 'generatedVoice.mp3');
+    const response = await axios.post(url, payload, { 
+      headers, 
+      responseType: 'arraybuffer',
+      maxBodyLength: Infinity
+    });
+
+    const filePath = path.join(process.cwd(), 'public/assets', 'generatedVoice.mp3');
     const fileUrl = `/assets/generatedVoice.mp3`;
 
     // Write the response data to a file using async/await
