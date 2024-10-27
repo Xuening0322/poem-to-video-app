@@ -171,45 +171,52 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
       return;
     }
   
-    const requestBody = {
-      videoUrl: videoUrl,
-      musicUrl: musicUrl,
-      voiceUrl: voiceUrl
-    };
-  
     try {
+      // Process video
       const response = await fetch('/api/processVideo', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify({
+          videoUrl: videoUrl,
+          musicUrl: musicUrl,
+          voiceUrl: voiceUrl
+        })
       });
   
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to process video');
       }
   
       const result = await response.json();
-      
-      // Save video to GCP bucket
+      console.log('Video processed:', result);
+  
+      // Make sure we have the full URL
+      const fullVideoUrl = result.url.startsWith('http') 
+        ? result.url 
+        : `${window.location.origin}${result.url}`;
+  
+      // Save to gallery
       const saveResponse = await fetch('/api/saveVideo', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          videoUrl: result.url,
+          videoUrl: fullVideoUrl,
           metadata: {
-            title: prompt.substring(0, 50) + '...',
-            style: videoStyle,
+            title: prompt?.substring(0, 50) + '...' || 'Untitled',
+            style: videoStyle || 'Standard',
             createdAt: new Date().toISOString()
           }
         })
       });
   
       if (!saveResponse.ok) {
-        throw new Error('Failed to save video to gallery');
+        const errorData = await saveResponse.json();
+        throw new Error(errorData.message || 'Failed to save video to gallery');
       }
   
       const savedVideo = await saveResponse.json();
@@ -217,6 +224,7 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
       
     } catch (error) {
       console.error('Error generating movie:', error);
+      alert(`Failed to generate movie: ${error.message}`);
     }
   };
 

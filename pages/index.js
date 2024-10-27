@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import AnalysisForm from '../components/AnalysisForm';
 import DisplayAnalysis from '../components/DisplayAnalysis';
 import SettingsSidebar from '../components/SettingsSidebar';
-import VideoGallery from '../components/VideoGallery';
+import Link from 'next/link';
 
 export default function Home() {
   const [analysis, setAnalysis] = useState('');
@@ -46,10 +46,15 @@ export default function Home() {
     <div className="container">
       <h1>🎵 Poem-to-Video Generation</h1>
       <p>This app analyzes a poem to extract its core essence, themes, and emotions, then generates a music video that visually interprets the poem's narrative. 📜🎶</p>
+      <Link 
+          href="/gallery" 
+          className="text-blue-600 hover:text-blue-800 transition-colors"
+        >
+          View Gallery →
+        </Link>
       <SettingsSidebar settings={settings} onSettingsChange={handleSettingsChange} />
       <AnalysisForm onSubmit={handlePoemSubmit} />
       <DisplayAnalysis analysis={analysis} duration={settings.duration} poemText={poem} bpm={settings.bpm} videoStyle={settings.videoStyle} />
-      <VideoGallery />
     </div>
   );
 }

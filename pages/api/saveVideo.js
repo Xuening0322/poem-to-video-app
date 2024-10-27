@@ -1,96 +1,115 @@
 import { Storage } from '@google-cloud/storage';
 import fetch from 'node-fetch';
+import fs from 'fs/promises';
+import path from 'path';
 
-const storage = new Storage();
+const storage = new Storage({
+  keyFilename: path.join(process.cwd(), 'gcp-key.json')
+});
 const bucket = storage.bucket('poem-to-video');
 
-export default async function handler(req, res) {
-    if (req.method !== 'POST') {
-      return res.status(405).json({ message: 'Method not allowed' });
-    }
-  
-    try {
-      const { videoUrl, metadata } = req.body;
-  
-      if (!videoUrl) {
-        return res.status(400).json({ message: 'Video URL is required' });
-      }
+async function uploadFileToBucket(buffer, filename) {
+  try {
+    console.log('Starting upload for file:', filename);
+    const blob = bucket.file(filename);
 
-      // Format the date for the filename
-      const now = new Date();
-      const timestamp = now.toISOString().replace(/[:.]/g, '-');
-      
-      // Generate a unique filename with proper structure
-      const filename = `videos/${timestamp}-${Math.random().toString(36).substring(7)}.mp4`;
-  
-      console.log('Downloading video from:', videoUrl);
-      const response = await fetch(videoUrl);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch video: ${response.statusText}`);
+    // Create write stream without ACL (using uniform bucket-level access)
+    const blobStream = blob.createWriteStream({
+      resumable: false,
+      metadata: {
+        contentType: 'video/mp4'
       }
-      
-      const buffer = await response.buffer();
-  
-      const file = bucket.file(filename);
-      const stream = file.createWriteStream({
-        metadata: {
-          contentType: 'video/mp4',
-          metadata: {
-            title: metadata?.title || 'Untitled',
-            style: metadata?.style || 'Standard',
-            createdAt: now.toISOString()
-          },
-          cacheControl: 'public, max-age=31536000',
+    });
+
+    return new Promise((resolve, reject) => {
+      blobStream.on('error', (err) => {
+        console.error('Stream error:', err);
+        reject(err);
+      });
+
+      blobStream.on('finish', async () => {
+        try {
+          // Generate a public URL
+          const publicUrl = `https://storage.googleapis.com/poem-to-video/${encodeURIComponent(filename)}`;
+          console.log('File uploaded successfully:', publicUrl);
+          resolve(publicUrl);
+        } catch (err) {
+          console.error('Error getting public URL:', err);
+          reject(err);
         }
       });
-  
-      return new Promise((resolve, reject) => {
-        stream.on('finish', async () => {
-          try {
-            // Make the file public
-            await file.makePublic();
-            
-            const publicUrl = `https://storage.googleapis.com/poem-to-video/${filename}`;
-            console.log('Upload successful:', publicUrl);
-            
-            res.status(200).json({ 
-              url: publicUrl,
-              id: filename,
-              title: metadata?.title || 'Untitled',
-              style: metadata?.style || 'Standard',
-              createdAt: now.toISOString()
-            });
-            resolve();
-          } catch (err) {
-            console.error('Error making file public:', err);
-            res.status(500).json({ 
-              message: 'Error making file public', 
-              error: err.message,
-              stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
-            });
-            reject(err);
-          }
-        });
-  
-        stream.on('error', (err) => {
-          console.error('Upload stream error:', err);
-          res.status(500).json({ 
-            message: 'Error uploading to storage', 
-            error: err.message,
-            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
-          });
-          reject(err);
-        });
-  
-        stream.end(buffer);
+
+      console.log('Writing buffer to stream...');
+      blobStream.end(buffer);
+    });
+  } catch (error) {
+    console.error('Upload error:', error);
+    throw error;
+  }
+}
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ message: 'Method not allowed' });
+  }
+
+  try {
+    const { videoUrl, metadata } = req.body;
+
+    if (!videoUrl) {
+      return res.status(400).json({ message: 'Video URL is required' });
+    }
+
+    const now = new Date();
+    const timestamp = now.toISOString().replace(/[:.]/g, '-');
+    const filename = `${timestamp}-${Math.random().toString(36).substring(7)}.mp4`;
+
+    console.log('Processing video from:', videoUrl);
+
+    try {
+      let fileBuffer;
+      
+      if (videoUrl.startsWith('/assets')) {
+        const localPath = path.join(process.cwd(), 'public', videoUrl);
+        console.log('Reading local file from:', localPath);
+        fileBuffer = await fs.readFile(localPath);
+        console.log('Local file read, size:', fileBuffer.length);
+      } else {
+        console.log('Fetching remote file from:', videoUrl);
+        const response = await fetch(videoUrl);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch video: ${response.statusText}`);
+        }
+        const arrayBuffer = await response.arrayBuffer();
+        fileBuffer = Buffer.from(arrayBuffer);
+        console.log('Remote file fetched, size:', fileBuffer.length);
+      }
+
+      const publicUrl = await uploadFileToBucket(fileBuffer, filename);
+
+      return res.status(200).json({
+        url: publicUrl,
+        id: filename,
+        title: metadata?.title || 'Untitled',
+        style: metadata?.style || 'Standard',
+        createdAt: now.toISOString()
       });
-    } catch (error) {
-      console.error('Error processing video:', error);
-      res.status(500).json({ 
-        message: 'Error processing video', 
-        error: error.message,
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+
+    } catch (uploadError) {
+      console.error('Error handling video:', uploadError);
+      return res.status(500).json({
+        message: 'Error handling video',
+        error: uploadError.message,
+        stack: process.env.NODE_ENV === 'development' ? uploadError.stack : undefined
       });
     }
+
+  } catch (error) {
+    console.error('Error processing video:', error);
+    return res.status(500).json({
+      message: 'Error processing video',
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
 }
