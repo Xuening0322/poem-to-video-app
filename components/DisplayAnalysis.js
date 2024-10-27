@@ -170,6 +170,7 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
       alert('Please generate all necessary files (video, voice, and music) first.');
       return;
     }
+  
     const requestBody = {
       videoUrl: videoUrl,
       musicUrl: musicUrl,
@@ -190,12 +191,34 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
       }
   
       const result = await response.json();
-      console.log("New movie generated: ", result.url);
-      setMovieUrl(result.url);
+      
+      // Save video to GCP bucket
+      const saveResponse = await fetch('/api/saveVideo', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          videoUrl: result.url,
+          metadata: {
+            title: prompt.substring(0, 50) + '...',
+            style: videoStyle,
+            createdAt: new Date().toISOString()
+          }
+        })
+      });
+  
+      if (!saveResponse.ok) {
+        throw new Error('Failed to save video to gallery');
+      }
+  
+      const savedVideo = await saveResponse.json();
+      setMovieUrl(savedVideo.url);
+      
     } catch (error) {
       console.error('Error generating movie:', error);
     }
-  };  
+  };
 
 
   return (

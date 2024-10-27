@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import AnalysisForm from '../components/AnalysisForm';
 import DisplayAnalysis from '../components/DisplayAnalysis';
 import SettingsSidebar from '../components/SettingsSidebar';
+import VideoGallery from '../components/VideoGallery';
 
 export default function Home() {
   const [analysis, setAnalysis] = useState('');
@@ -48,6 +49,7 @@ export default function Home() {
       <SettingsSidebar settings={settings} onSettingsChange={handleSettingsChange} />
       <AnalysisForm onSubmit={handlePoemSubmit} />
       <DisplayAnalysis analysis={analysis} duration={settings.duration} poemText={poem} bpm={settings.bpm} videoStyle={settings.videoStyle} />
+      <VideoGallery />
     </div>
   );
 }

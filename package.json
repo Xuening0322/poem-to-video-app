@@ -11,9 +11,12 @@
   "dependencies": {
     "@dropb/ffprobe": "^3.0.0",
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "@google-cloud/storage": "^7.13.0",
     "axios": "^1.6.8",
     "fluent-ffmpeg": "^2.1.2",
+    "lucide-react": "^0.453.0",
     "next": "14.2.3",
+    "node-fetch": "^3.3.2",
     "react": "^18",
     "react-dom": "^18",
     "replicate": "^0.29.1"
