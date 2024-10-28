@@ -10,8 +10,6 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
   const [prompt, setPrompt] = useState('');
   const [musicUrl, setMusicUrl] = useState('');
   const [videoPrompts, setVideoPrompts] = useState([]);
-  const [startPrompt, setStartPrompt] = useState('');
-  const [endPrompt, setEndPrompt] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const [voiceUrl, setVoiceUrl] = useState('');
   const [movieUrl, setMovieUrl] = useState('');
@@ -19,7 +17,9 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
   const [spotifyUrl, setSpotifyUrl] = useState('');
   const [spotifyTrack, setSpotifyTrack] = useState(null);
   const [musicAnalysis, setMusicAnalysis] = useState(null);
-  const [isUsingSpotify, setIsUsingSpotify] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [musicSource, setMusicSource] = useState(null);
   const [showSpotifyInput, setShowSpotifyInput] = useState(false);
 
   useEffect(() => {
@@ -56,61 +56,10 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
     setVideoPrompts(newVideoPrompts);
   };
 
-  const importSpotifyTrack = async () => {
-    try {
-      const response = await fetch('/api/spotify/import', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ spotifyUrl })
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      setSpotifyTrack(result.track);
-      setMusicUrl(result.previewUrl);
-      setIsUsingSpotify(true);
-
-      // Analyze the imported music
-      await analyzeMusicFeatures(result.track.id);
-    } catch (error) {
-      console.error('Error importing Spotify track:', error);
-      alert('Failed to import Spotify track. Please check the URL and try again.');
-    }
-  };
-
-  const analyzeMusicFeatures = async (trackId) => {
-    try {
-      const response = await fetch('/api/spotify/analyze', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ trackId })
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const analysis = await response.json();
-
-      console.log(analysis);
-      setMusicAnalysis(analysis);
-    } catch (error) {
-      console.error('Error analyzing music:', error);
-    }
-  };
-
   const generateMusic = async () => {
-    if (isUsingSpotify) {
-      alert('You are currently using a Spotify track. Switch to generated music?');
-      return;
-    }
+    setMusicSource('generated');
+    setSpotifyTrack(null);
+    setMusicAnalysis(null);
 
     const requestBody = {
       prompt: prompt + ` at ${bpm} bpm`,
@@ -135,9 +84,101 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
       const result = await response.json();
       console.log('Generated Music:', result);
       setMusicUrl(result.url);
-      setIsUsingSpotify(false);
     } catch (error) {
       console.error('Error generating music:', error);
+    }
+  };
+
+  const importSpotifyTrack = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/spotify/import', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ spotifyUrl })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      // Check if the track has a preview URL
+      if (!result.previewUrl) {
+        const trackName = result.track?.name || 'this track';
+        const artistName = result.track?.artists?.[0]?.name || 'the artist';
+
+        setError(`Unfortunately, "${trackName}" by ${artistName} doesn't have a preview available. This happens with some Spotify tracks. Please try another track.`);
+        setSpotifyUrl(''); // Clear the input
+        setSpotifyTrack(null);
+        return;
+      }
+
+      setSpotifyTrack(result.track);
+      setMusicUrl(result.previewUrl);
+      setMusicSource('spotify');
+
+      // Analyze the imported music
+      await analyzeMusicFeatures(result.track.id);
+    } catch (error) {
+      setError(error.message);
+      console.error('Error importing Spotify track:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const analyzeMusicFeatures = async (trackId) => {
+    try {
+      const response = await fetch('/api/spotify/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ trackId })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const analysis = await response.json();
+      setMusicAnalysis(analysis);
+    } catch (error) {
+      setError('Failed to analyze music features');
+      console.error('Error analyzing music:', error);
+    }
+  };
+
+  const generateVideo = async () => {
+    const requestBody = {
+      // Ensure we're using the current values from videoPrompts
+      start_prompt: (videoPrompts[0] || '') + ` in a ${videoStyle} style`,
+      end_prompt: (videoPrompts[1] || '') + ` in a ${videoStyle} style`
+    };
+
+    try {
+      const response = await fetch('/api/generateVideo', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      setVideoUrl(result.video_url);
+      console.log('Generated Video:', result);
+    } catch (error) {
+      console.error('Error generating video:', error);
     }
   };
 
@@ -166,37 +207,11 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
         return separatorIndex !== -1 ? prompt.substring(separatorIndex + 1).trim() : '';
       });
 
+      // Initialize videoPrompts with both start and end prompts
       setVideoPrompts(extractedPrompts);
       console.log(extractedPrompts);
     } catch (error) {
       console.error('Error generating video prompts:', error);
-    }
-  };
-
-  const generateVideo = async () => {
-    const requestBody = {
-      start_prompt: videoPrompts[0] + ` in a ${videoStyle} style`,
-      end_prompt: videoPrompts[1] + ` in a ${videoStyle} style`
-    };
-
-    try {
-      const response = await fetch('/api/generateVideo', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestBody)
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      setVideoUrl(result.video_url);
-      console.log('Generated Video:', result);
-    } catch (error) {
-      console.error('Error generating video:', error);
     }
   };
 
@@ -232,17 +247,33 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
     }
 
     try {
+      // Create request body with music source information
+      const requestBody = {
+        videoUrl: videoUrl,
+        musicUrl: musicUrl,
+        voiceUrl: voiceUrl,
+        metadata: {
+          title: prompt?.substring(0, 50) + '...' || 'Untitled',
+          style: videoStyle || 'Standard',
+          createdAt: new Date().toISOString(),
+          musicSource: musicSource,
+          ...(spotifyTrack && {
+            musicInfo: {
+              trackName: spotifyTrack.name,
+              artist: spotifyTrack.artists[0].name,
+              spotifyUrl: spotifyUrl
+            }
+          })
+        }
+      };
+
       // Process video
       const response = await fetch('/api/processVideo', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          videoUrl: videoUrl,
-          musicUrl: musicUrl,
-          voiceUrl: voiceUrl
-        })
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) {
@@ -258,7 +289,7 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
         ? result.url
         : `${window.location.origin}${result.url}`;
 
-      // Save to gallery
+      // Save to gallery with updated metadata
       const saveResponse = await fetch('/api/saveVideo', {
         method: 'POST',
         headers: {
@@ -266,11 +297,7 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
         },
         body: JSON.stringify({
           videoUrl: fullVideoUrl,
-          metadata: {
-            title: prompt?.substring(0, 50) + '...' || 'Untitled',
-            style: videoStyle || 'Standard',
-            createdAt: new Date().toISOString()
-          }
+          metadata: requestBody.metadata // Use the same metadata from the process request
         })
       });
 
@@ -325,8 +352,25 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
                 placeholder="Paste Spotify track URL here"
                 style={{ flex: 1 }}
               />
-              <button onClick={importSpotifyTrack}>Import Track</button>
+              <button
+                onClick={importSpotifyTrack}
+                disabled={isLoading || !spotifyUrl}
+              >
+                {isLoading ? 'Importing...' : 'Import Track'}
+              </button>
             </div>
+            {error && (
+              <div style={{
+                marginTop: '10px',
+                padding: '10px',
+                backgroundColor: '#fee2e2',
+                color: '#dc2626',
+                borderRadius: '4px',
+                fontSize: '0.9em'
+              }}>
+                {error}
+              </div>
+            )}
           </div>
         )}
 
@@ -370,18 +414,52 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
         </audio>
       )}
       <h3>Video Generation</h3>
-      <button onClick={generateVideoPrompts}>Generate Video Prompts</button>
-      <label style={{ marginTop: '30px' }}>Start Video Prompt:</label>
-      <textarea value={videoPrompts[0]} onChange={handleVideoPromptChange(0)} rows="3" />
-      <label>End Video Prompt:</label>
-      <textarea value={videoPrompts[1]} onChange={handleVideoPromptChange(1)} rows="3" />
-      <button onClick={generateVideo}>Generate Video</button>
+      <button
+        onClick={generateVideoPrompts}
+        className="generate-button"
+      >
+        Generate Video Prompts
+      </button>
+
+      <div className="video-prompts-container" style={{ marginTop: '20px' }}>
+        <div className="prompt-section">
+          <label style={{ display: 'block', marginBottom: '5px' }}>Start Video Prompt:</label>
+          <textarea
+            value={videoPrompts[0] || ''}
+            onChange={handleVideoPromptChange(0)}
+            rows="3"
+          />
+        </div>
+
+        <div className="prompt-section">
+          <label style={{ display: 'block', marginBottom: '5px' }}>End Video Prompt:</label>
+          <textarea
+            value={videoPrompts[1] || ''}
+            onChange={handleVideoPromptChange(1)}
+            rows="3"
+          />
+        </div>
+      </div>
+
+      <button
+        onClick={generateVideo}
+        disabled={!videoPrompts[0] || !videoPrompts[1]}
+        className="generate-button"
+        style={{ marginTop: '10px' }}
+      >
+        Generate Video
+      </button>
+
       {videoUrl && (
-        <video controls>
-          <source src={videoUrl} type="video/mp4" />
-          Your browser does not support the video tag.
-        </video>
+        <div style={{ marginTop: '20px' }}>
+          <video controls style={{ width: '100%', borderRadius: '4px' }}>
+            <source src={videoUrl} type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+        </div>
       )}
+
+
       <h3>Music Video Generation</h3>
       <button onClick={generateMovie}>Generate Music Video</button>
       {movieUrl && (

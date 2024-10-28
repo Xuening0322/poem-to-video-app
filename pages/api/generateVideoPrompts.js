@@ -13,7 +13,7 @@ export default async function handler(req, res) {
     `Given a poem ('${poem}'), `
     + "generate prompts for an image generation model. "
     + "Use descriptive language to ensure all scenes are interconnected, showcasing a clear transition that aligns with the image generation model's requirements for creating transition videos. "
-    + `Please generate only one sentence for each prompt, clearly labeled with 'Start Prompt:' and 'End Prompt:' to delineate them. Include as many '${literals}' as possible. `
+    + `Please generate only one sentence for each prompt, clearly labeled with 'Start Prompt:' and 'End Prompt:' to delineate them. Include as many literals ('${literals}') as possible, but don't include human or people related literals. `
     + "Ensure visuals for both prompts are timed to match the poem's narration precisely. "
     + `Start Prompt: One sentence. Begin with a scene that includes all the poem's literal elements, evoking the broader themes of '${themes}' and the emotion of '${emotions}'. This scene should set the narrative in motion. `
     + `End Prompt: One sentence. Conclude the narrative with a scene that reflects a transformation or resolution, including all the poem's literal elements.`
