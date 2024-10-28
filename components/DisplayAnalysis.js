@@ -13,6 +13,9 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
   const [videoUrl, setVideoUrl] = useState('');
   const [voiceUrl, setVoiceUrl] = useState('');
   const [movieUrl, setMovieUrl] = useState('');
+  const [videoKey, setVideoKey] = useState(0);
+  const [movieKey, setMovieKey] = useState(0);
+  const [audioKey, setAudioKey] = useState(0);
 
   const [spotifyUrl, setSpotifyUrl] = useState('');
   const [spotifyTrack, setSpotifyTrack] = useState(null);
@@ -23,6 +26,23 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
   const [showSpotifyInput, setShowSpotifyInput] = useState(false);
 
   useEffect(() => {
+    // Reset all relevant states when a new analysis comes in
+    setMusicUrl('');
+    setVideoUrl('');
+    setVoiceUrl('');
+    setMovieUrl('');
+    setVideoPrompts([]);
+    setSpotifyUrl('');
+    setSpotifyTrack(null);
+    setMusicAnalysis(null);
+    setError(null);
+    setMusicSource(null);
+    setShowSpotifyInput(false);
+    setVideoKey(prevKey => prevKey + 1);
+    setMovieKey(prevKey => prevKey + 1);
+    setAudioKey(prevKey => prevKey + 1);
+
+    // Only update the analysis-related states if there's new analysis data
     if (analysis) {
       const parsedAnalysis = analysis
         .split('\n')
@@ -84,6 +104,7 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
       const result = await response.json();
       console.log('Generated Music:', result);
       setMusicUrl(result.url);
+      setAudioKey(prevKey => prevKey + 1); // Increment audio key when new music is generated
     } catch (error) {
       console.error('Error generating music:', error);
     }
@@ -121,6 +142,7 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
       setSpotifyTrack(result.track);
       setMusicUrl(result.previewUrl);
       setMusicSource('spotify');
+      setAudioKey(prevKey => prevKey + 1); // Increment audio key when new track is imported
 
       // Analyze the imported music
       await analyzeMusicFeatures(result.track.id);
@@ -176,6 +198,7 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
 
       const result = await response.json();
       setVideoUrl(result.video_url);
+      setVideoKey(prevKey => prevKey + 1); // Increment the key when new video is generated
       console.log('Generated Video:', result);
     } catch (error) {
       console.error('Error generating video:', error);
@@ -284,7 +307,6 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
       const result = await response.json();
       console.log('Video processed:', result);
 
-      // Make sure we have the full URL
       const fullVideoUrl = result.url.startsWith('http')
         ? result.url
         : `${window.location.origin}${result.url}`;
@@ -308,6 +330,7 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
 
       const savedVideo = await saveResponse.json();
       setMovieUrl(savedVideo.url);
+      setMovieKey(prevKey => prevKey + 1); // Increment the key when new movie is generated
 
     } catch (error) {
       console.error('Error generating movie:', error);
@@ -382,7 +405,10 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
       </div>
 
       {musicUrl && (
-        <audio controls>
+        <audio 
+          key={audioKey}
+          controls
+        >
           <source src={musicUrl} type="audio/mpeg" />
           Your browser does not support the audio element.
         </audio>
@@ -452,7 +478,10 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
 
       {videoUrl && (
         <div style={{ marginTop: '20px' }}>
-          <video controls style={{ width: '100%', borderRadius: '4px' }}>
+          <video
+            key={videoKey}
+            controls
+          >
             <source src={videoUrl} type="video/mp4" />
             Your browser does not support the video tag.
           </video>
@@ -463,10 +492,15 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
       <h3>Music Video Generation</h3>
       <button onClick={generateMovie}>Generate Music Video</button>
       {movieUrl && (
-        <video controls>
-          <source src={movieUrl} type="video/mp4" />
-          Your browser does not support the video tag.
-        </video>
+        <div style={{ marginTop: '20px' }}>
+          <video
+            key={movieKey}
+            controls
+          >
+            <source src={movieUrl} type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+        </div>
       )}
     </div>
   );

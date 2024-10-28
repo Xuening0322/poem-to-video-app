@@ -12,8 +12,7 @@ async function uploadFileToBucket(buffer, filename) {
   try {
     console.log('Starting upload for file:', filename);
     const blob = bucket.file(filename);
-
-    // Create write stream without ACL (using uniform bucket-level access)
+    
     const blobStream = blob.createWriteStream({
       resumable: false,
       metadata: {
@@ -46,6 +45,18 @@ async function uploadFileToBucket(buffer, filename) {
     console.error('Upload error:', error);
     throw error;
   }
+}
+
+function parseTimestampFromFilename(filename) {
+  const timestampMatch = filename.match(/^(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z)/);
+  if (timestampMatch) {
+    // Replace hyphens back to colons and dots for proper ISO format
+    const isoTimestamp = timestampMatch[1]
+      .replace('T', 'T')
+      .replace(/-(\d{2})-(\d{2})-(\d{3})Z$/, ':$1:$2.$3Z');
+    return new Date(isoTimestamp);
+  }
+  return new Date(); // Fallback to current time if no timestamp in filename
 }
 
 export default async function handler(req, res) {
@@ -86,13 +97,14 @@ export default async function handler(req, res) {
       }
 
       const publicUrl = await uploadFileToBucket(fileBuffer, filename);
+      const createdAt = parseTimestampFromFilename(filename);
 
       return res.status(200).json({
         url: publicUrl,
         id: filename,
         title: metadata?.title || 'Untitled',
         style: metadata?.style || 'Standard',
-        createdAt: now.toISOString()
+        createdAt: createdAt.toISOString()
       });
 
     } catch (uploadError) {

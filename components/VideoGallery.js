@@ -23,6 +23,26 @@ const VideoGallery = () => {
     }
   };
 
+  const formatDateTime = (timestamp) => {
+    const date = new Date(timestamp);
+    
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const month = monthNames[date.getMonth()];
+    const day = date.getDate();
+    const year = date.getFullYear();
+    let hours = date.getHours();
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'AM' : 'PM';
+    
+    // Convert to 12-hour format
+    hours = hours % 12;
+    hours = hours ? hours : 12; // the hour '0' should be '12'
+    hours = String(hours).padStart(2, '0');
+
+    return `${month} ${day}, ${year}, ${hours}:${minutes}:${seconds} ${ampm}`;
+  };
+
   return (
     <div className="w-full max-w-4xl mx-auto bg-white rounded-lg shadow-lg">
       <div className="p-6 border-b border-gray-200">
@@ -53,13 +73,6 @@ const VideoGallery = () => {
                     <source src={video.url} type="video/mp4" />
                     Your browser does not support the video tag.
                   </video>
-                </div>
-                <div className="p-4">
-                  <div className="space-y-1">
-                    <p className="text-sm text-gray-600">
-                      Created: {new Date(video.createdAt).toLocaleDateString()}
-                    </p>
-                  </div>
                 </div>
               </div>
             ))}

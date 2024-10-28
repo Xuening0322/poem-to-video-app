@@ -11,7 +11,7 @@ export default async function handler(req, res) {
   }
 
   const { poem } = req.body;
-  let poemText = poem;
+  let poemText = poem.replace(/([.,;:])/g, "                               ");
 
   const voiceId = "GBv7mTt0atIp3Br8iCZE"; // Make sure this is the correct voice ID
   const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
