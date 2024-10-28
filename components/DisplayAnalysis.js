@@ -16,6 +16,7 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
   const [videoKey, setVideoKey] = useState(0);
   const [movieKey, setMovieKey] = useState(0);
   const [audioKey, setAudioKey] = useState(0);
+  const [voiceKey, setVoiceKey] = useState(0);
 
   const [spotifyUrl, setSpotifyUrl] = useState('');
   const [spotifyTrack, setSpotifyTrack] = useState(null);
@@ -257,6 +258,7 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
       }
       const audioUrl = await response.text();
       setVoiceUrl(audioUrl);
+      setVoiceKey(prevKey => prevKey + 1);
 
     } catch (error) {
       console.error('Error generating voice:', error);
@@ -405,7 +407,7 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
       </div>
 
       {musicUrl && (
-        <audio 
+        <audio
           key={audioKey}
           controls
         >
@@ -434,7 +436,10 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
       <h3>Voice Generation</h3>
       <button onClick={generateVoice}>Generate Voice</button>
       {voiceUrl && (
-        <audio controls>
+        <audio
+          key={voiceKey}
+          controls
+        >
           <source src={voiceUrl} type="audio/mpeg" />
           Your browser does not support the audio element.
         </audio>
