@@ -1,8 +1,6 @@
-// pages/api/generateVoice.js
-
 const axios = require("axios");
-const fs = require("fs").promises;
 const path = require("path");
+const fs = require("fs").promises;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -11,14 +9,23 @@ export default async function handler(req, res) {
   }
 
   const { poem } = req.body;
-  let poemText = poem.replace(/([.,;:])/g, "                               ");
+  
+  if (!poem) {
+    return res.status(400).json({ message: 'Poem text is required' });
+  }
 
-  const voiceId = "GBv7mTt0atIp3Br8iCZE"; // Make sure this is the correct voice ID
+  if (!process.env.XI_API_KEY) {
+    console.error('XI_API_KEY environment variable is not set');
+    return res.status(500).json({ message: 'Server configuration error' });
+  }
+
+  let poemText = poem.replace(/([.,;:])/g, "   ");
+  const voiceId = "GBv7mTt0atIp3Br8iCZE";
   const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
 
   const payload = {
     text: poemText,
-    model_id: "eleven_monolingual_v1", // You can change this if needed
+    model_id: "eleven_monolingual_v1",
     voice_settings: {
       stability: 0.5,
       similarity_boost: 0.5
@@ -32,22 +39,35 @@ export default async function handler(req, res) {
   };
 
   try {
-    const response = await axios.post(url, payload, { 
-      headers, 
+    const response = await axios.post(url, payload, {
+      headers,
       responseType: 'arraybuffer',
-      maxBodyLength: Infinity
+      maxBodyLength: Infinity,
+      timeout: 30000
     });
 
-    const filePath = path.join(process.cwd(), 'public/assets', 'generatedVoice.mp3');
-    const fileUrl = `/assets/generatedVoice.mp3`;
+    const assetsDir = path.join(process.cwd(), 'public/assets');
+    try {
+      await fs.access(assetsDir);
+    } catch {
+      await fs.mkdir(assetsDir, { recursive: true });
+    }
 
-    // Write the response data to a file using async/await
+    const filePath = path.join(assetsDir, 'generatedVoice.mp3');
+    const fileUrl = '/assets/generatedVoice.mp3';
+
     await fs.writeFile(filePath, response.data);
+    console.log(`File written successfully to: ${filePath}`);
+    
+    // Send plain text response instead of JSON
     res.setHeader('Content-Type', 'text/plain');
-    console.log("fileUrl: " + fileUrl);
     res.send(fileUrl);
+    
   } catch (error) {
-    console.error(`Error generating voice or saving file: ${error.message}`);
-    res.status(error.response?.status || 500).json({ message: `Error generating voice or saving file: ${error.message}` });
+    console.error('Error:', error.message);
+    return res.status(500).json({ 
+      message: 'Error generating voice',
+      error: error.message
+    });
   }
 }
