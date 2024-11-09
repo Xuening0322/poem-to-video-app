@@ -22,6 +22,24 @@ async function downloadFile(url, outputFilePath) {
     });
 }
 
+async function downloadMusic(url) {
+    const trimmedPath = path.join(__dirname, '../../../../public/assets', 'trimmed_audio.mp3');
+    
+    // check if it's blob URL
+    if (url.startsWith('blob:')) {
+        console.log("Blob URL detected, using trimmed_audio.mp3");
+        if (fs.existsSync(trimmedPath)) {
+            return trimmedPath;
+        } else {
+            throw new Error('Trimmed audio file not found');
+        }
+    }
+
+    // if not, download from URL
+    console.log("Downloading music from URL:", url);
+    return downloadFile(url, path.join(__dirname, '../../../../public/assets', 'downloadedMusic.mp3'));
+}
+
 async function downloadVoice(url) {
     const voicePath = path.join(__dirname, '../../../../public/assets', 'generatedVoice.mp3');
     return (url, voicePath);
@@ -35,12 +53,15 @@ export default async function handler(req, res) {
     try {
         const { videoUrl, musicUrl, voiceUrl } = req.body;
 
+        console.log(musicUrl);
+
         const [videoPath, musicPath, voicePath] = await Promise.all([
             downloadFile(videoUrl, path.join(__dirname, '../../../../public/assets', 'downloadedVideo.mp4')),
-            downloadFile(musicUrl, path.join(__dirname, '../../../../public/assets', 'downloadedMusic.mp3')),
+            downloadMusic(musicUrl),
             downloadVoice(voiceUrl),
         ]);
 
+        console.log("videoPath, musicPath, voicePath", videoPath, musicPath, voicePath);
         const outputPath = await processVideo(videoPath, musicPath, voicePath);
         console.log("output path: ", outputPath);
 
@@ -61,6 +82,8 @@ async function processVideo(videoPath, musicPath, voicePath) {
         getMediaDuration(musicPath),
         getMediaDuration(voicePath)
     ]);
+
+    console.log(videoDuration, musicDuration, voiceDuration);
 
     const speedFactor = videoDuration / musicDuration;
     const loopsRequired = Math.ceil(voiceDuration / musicDuration);

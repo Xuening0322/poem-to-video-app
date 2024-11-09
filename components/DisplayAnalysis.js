@@ -1,5 +1,6 @@
 // components/DisplayAnalysis.js
 import React, { useState, useEffect } from 'react';
+import AudioTrimmer from './AudioTrimmer';
 
 const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
 
@@ -25,6 +26,9 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
   const [error, setError] = useState(null);
   const [musicSource, setMusicSource] = useState(null);
   const [showSpotifyInput, setShowSpotifyInput] = useState(false);
+  const [showAudioTrimmer, setShowAudioTrimmer] = useState(false);
+  const [realBlobUrl, setRealBlobUrl] = useState('');
+  const [voiceDuration, setVoiceDuration] = useState(0);
 
   useEffect(() => {
     // Reset all relevant states when a new analysis comes in
@@ -260,6 +264,12 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
       setVoiceUrl(audioUrl);
       setVoiceKey(prevKey => prevKey + 1);
 
+      // Get duration of generated voice
+      const audio = new Audio(audioUrl);
+      audio.addEventListener('loadedmetadata', () => {
+        setVoiceDuration(audio.duration);
+      });
+
     } catch (error) {
       console.error('Error generating voice:', error);
     }
@@ -272,10 +282,12 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
     }
 
     try {
-      // Create request body with music source information
+      // Use the real blob URL for uploaded audio, otherwise use the regular musicUrl
+      const musicUrlToUse = musicSource === 'uploaded' ? realBlobUrl : musicUrl;
+
       const requestBody = {
         videoUrl: videoUrl,
-        musicUrl: musicUrl,
+        musicUrl: musicUrlToUse, // Use the appropriate URL
         voiceUrl: voiceUrl,
         metadata: {
           title: prompt?.substring(0, 50) + '...' || 'Untitled',
@@ -355,12 +367,31 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
       <label>Prompt:</label>
       <textarea value={prompt} onChange={handleChange(setPrompt)} rows="4" />
 
+
+      <h3>Voice Generation</h3>
+      <button onClick={generateVoice}>Generate Voice Narration</button>
+      {voiceUrl && (
+        <audio
+          key={voiceKey}
+          controls
+        >
+          <source src={voiceUrl} type="audio/mpeg" />
+          Your browser does not support the audio element.
+        </audio>
+      )}
+
       <h3>Music Generation</h3>
       <div style={{ marginBottom: '20px' }}>
         <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
           <button onClick={generateMusic}>Generate Music from Prompts above</button>
           <button onClick={() => setShowSpotifyInput(!showSpotifyInput)}>
             Import from Spotify
+          </button>
+          <button onClick={() => {
+            setShowAudioTrimmer(!showAudioTrimmer);
+            setShowSpotifyInput(false);
+          }}>
+            Upload & Trim Audio
           </button>
         </div>
 
@@ -399,6 +430,31 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
           </div>
         )}
 
+        {showAudioTrimmer && (
+          <div style={{ marginTop: '20px', padding: '20px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <h4 style={{ margin: 0 }}>Audio Trimmer</h4>
+              <button
+                onClick={() => setShowAudioTrimmer(false)}
+                className="text-gray-500 hover:text-gray-700"
+                style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+            <AudioTrimmer
+              onSave={(trimmedAudioUrl) => {
+                setRealBlobUrl(trimmedAudioUrl);
+                setMusicUrl('/assets/trimmed_audio.mp3');
+                setMusicSource('uploaded');
+                setAudioKey(prevKey => prevKey + 1);
+                setShowAudioTrimmer(false);
+              }}
+              targetDuration={voiceDuration}
+            />
+          </div>
+        )}
+
         {spotifyTrack && (
           <div style={{ marginTop: '10px' }}>
             <p>Imported: {spotifyTrack.name} - {spotifyTrack.artists[0].name}</p>
@@ -433,17 +489,6 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
         </div>
       )}
 
-      <h3>Voice Generation</h3>
-      <button onClick={generateVoice}>Generate Voice</button>
-      {voiceUrl && (
-        <audio
-          key={voiceKey}
-          controls
-        >
-          <source src={voiceUrl} type="audio/mpeg" />
-          Your browser does not support the audio element.
-        </audio>
-      )}
       <h3>Video Generation</h3>
       <button
         onClick={generateVideoPrompts}
