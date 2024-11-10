@@ -19,7 +19,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ message: 'Server configuration error' });
   }
 
-  let poemText = poem.replace(/([.,;:])/g, "   ");
+  let poemText = poem.replace(/([.,;:])/g, "---------------");
   const voiceId = "GBv7mTt0atIp3Br8iCZE";
   const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
 
@@ -53,7 +53,7 @@ export default async function handler(req, res) {
       await fs.mkdir(assetsDir, { recursive: true });
     }
 
-    const filePath = path.join(assetsDir, 'generatedVoice.mp3');
+    const filePath = path.join(__dirname, '../../../../public/assets', 'generatedVoice.mp3');
     const fileUrl = '/assets/generatedVoice.mp3';
 
     await fs.writeFile(filePath, response.data);
