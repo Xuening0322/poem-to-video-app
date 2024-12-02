@@ -1,0 +1,64 @@
+/* styles/Gallery.module.css */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .pageLoading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  
+  .spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #6B46C1;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  .nav {
+    margin-bottom: 20px;
+  }
+  
+  .backLink {
+    color: #6B46C1;
+    text-decoration: none;
+  }
+  
+  .backLink:hover {
+    color: #553C9A;
+  }
+  
+  .title {
+    font-size: 32px;
+    font-weight: bold;
+    margin-bottom: 16px;
+  }
+  
+  .description {
+    color: #666;
+    margin-bottom: 32px;
+    line-height: 1.5;
+  }
+  
+  .subtitle {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 24px;
+  }

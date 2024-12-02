@@ -1,33 +1,80 @@
 // components/SettingsSidebar.js
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 const SettingsSidebar = ({ onSettingsChange }) => {
+  // Initialize state to track current settings
+  const [settings, setSettings] = useState({
+    duration: 15,
+    bpm: 120,
+    videoStyle: 'Oil Painting'
+  });
+
+  // Handle duration changes with validation
   const handleDurationChange = (e) => {
-    onSettingsChange({ duration: e.target.value });
+    const value = parseInt(e.target.value);
+    // Ensure duration is within valid range
+    const validatedDuration = Math.min(Math.max(value, 5), 30);
+    setSettings(prev => ({
+      ...prev,
+      duration: validatedDuration
+    }));
+    onSettingsChange({ duration: validatedDuration });
   };
 
   const handleBpmChange = (e) => {
-    onSettingsChange({ bpm: e.target.value });
+    const value = parseInt(e.target.value);
+    setSettings(prev => ({
+      ...prev,
+      bpm: value
+    }));
+    onSettingsChange({ bpm: value });
   };
 
   const handleVideoStyleChange = (e) => {
+    setSettings(prev => ({
+      ...prev,
+      videoStyle: e.target.value
+    }));
     onSettingsChange({ videoStyle: e.target.value });
   };
+
+  // Effect to ensure initial settings are propagated
+  useEffect(() => {
+    onSettingsChange(settings);
+  }, []);
 
   return (
     <div className="settings-sidebar">
       <div className="input-row">
         <label className="settings-label">
           Duration (seconds):
-          <input type="number" min="5" max="15" defaultValue="30" step="5" onChange={handleDurationChange} className="settings-input" />
+          <input
+            type="number"
+            min="5"
+            max="60"
+            value={settings.duration}
+            onChange={handleDurationChange}
+            className="settings-input"
+          />
         </label>
         <label className="settings-label">
           BPM:
-          <input type="number" min="60" max="180" defaultValue="120" step="1" onChange={handleBpmChange} className="settings-input" />
+          <input
+            type="number"
+            min="60"
+            max="180"
+            value={settings.bpm}
+            onChange={handleBpmChange}
+            className="settings-input"
+          />
         </label>
         <label className="settings-label">
           Video Style:
-          <select onChange={handleVideoStyleChange} className="settings-select">
+          <select
+            value={settings.videoStyle}
+            onChange={handleVideoStyleChange}
+            className="settings-select"
+          >
             <option value="Oil Painting">Oil Painting</option>
             <option value="Sketch">Sketch</option>
             <option value="Realistic">Realistic</option>

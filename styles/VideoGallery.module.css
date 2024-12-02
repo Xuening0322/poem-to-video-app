@@ -1,0 +1,42 @@
+/* styles/VideoGallery.module.css */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+  }
+  
+  .videoCard {
+    position: relative;
+    width: 100%;
+    padding-bottom: 100%; /* 创建正方形容器 */
+  }
+  
+  .video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .empty {
+    text-align: center;
+    padding: 40px 0;
+    color: #666;
+  }
+  
+  /* 响应式布局 */
+  @media (max-width: 768px) {
+    .grid {
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .grid {
+      grid-template-columns: 1fr;
+    }
+  }

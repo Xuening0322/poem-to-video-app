@@ -13,8 +13,8 @@ export default async function handler(req, res) {
   const prompt = `Input Poem: ${formattedPoem}\n\nTask:
   - Summarize the Poem: Provide a concise summary, capturing its core essence and themes in no more than 100 words.
   - Identify Key Themes and Emotions: Analyze the summarized poem to identify its predominant themes (like love, nature, conflict) and emotions (such as joy, sadness, hope).
-  - Literal Analysis: Examine and note the literal elements present in the poem. This includes direct references, imagery, and descriptions that contribute to the poem's surface-level meaning.
-  - Translate to Musical Terms: Suggest appropriate musical genres, instruments, and elements (like tempo, key, rhythm patterns) that could embody the identified themes, emotions, and literal elements.
+  - Literal Analysis: Examine and note the literal elements present in the poem, excluding any human-related imagery. Include only direct references to objects, landscapes, animals, or other non-human elements that contribute to the poem's surface-level meaning.
+  - Translate the poem into musical terms. Suggest a concise description of the musical genre, key, tempo (${bpm}), and instruments. Ensure the structure is looping-friendly with repetitive motifs and seamless transitions. Limit the output to a single sentence suitable for input into a music generation model.
   Finally, provide a single sentence prompt for music generation LLMs like MusicLM and MusicGen, summarizing the core essence, themes, emotions, and suggesting musical genres, instruments, tempo, key, and rhythm patterns based on the poem's analysis. Please specify the bpm as the provided one: ${bpm}
   
   Please display the format like 'Themes:', 'Literals:', 'Emotions:', 'Musical Terms:', and 'Prompt:'`;

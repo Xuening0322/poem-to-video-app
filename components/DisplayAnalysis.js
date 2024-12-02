@@ -30,6 +30,12 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
   const [realBlobUrl, setRealBlobUrl] = useState('');
   const [voiceDuration, setVoiceDuration] = useState(0);
 
+  const [isVoiceLoading, setIsVoiceLoading] = useState(false);
+  const [isMusicLoading, setIsMusicLoading] = useState(false);
+  const [isVideoLoading, setIsVideoLoading] = useState(false);
+  const [isMovieLoading, setIsMovieLoading] = useState(false);
+  const [isPromptsLoading, setIsPromptsLoading] = useState(false);
+
   useEffect(() => {
     // Reset all relevant states when a new analysis comes in
     setMusicUrl('');
@@ -82,6 +88,7 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
   };
 
   const generateMusic = async () => {
+    setIsMusicLoading(true);
     setMusicSource('generated');
     setSpotifyTrack(null);
     setMusicAnalysis(null);
@@ -112,6 +119,8 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
       setAudioKey(prevKey => prevKey + 1); // Increment audio key when new music is generated
     } catch (error) {
       console.error('Error generating music:', error);
+    } finally {
+      setIsMusicLoading(false);
     }
   };
 
@@ -182,6 +191,7 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
   };
 
   const generateVideo = async () => {
+    setIsVideoLoading(true);
     const requestBody = {
       // Ensure we're using the current values from videoPrompts
       start_prompt: (videoPrompts[0] || '') + ` in a ${videoStyle} style`,
@@ -207,10 +217,14 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
       console.log('Generated Video:', result);
     } catch (error) {
       console.error('Error generating video:', error);
+    } finally {
+      setIsVideoLoading(false);
     }
   };
 
   const generateVideoPrompts = async () => {
+    setIsPromptsLoading(true);
+
     try {
       const response = await fetch('/api/generateVideoPrompts', {
         method: 'POST',
@@ -240,10 +254,13 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
       console.log(extractedPrompts);
     } catch (error) {
       console.error('Error generating video prompts:', error);
+    } finally {
+      setIsPromptsLoading(false);
     }
   };
 
   const generateVoice = async () => {
+    setIsVoiceLoading(true);
     const requestBody = {
       poem: poemText
     };
@@ -272,10 +289,13 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
 
     } catch (error) {
       console.error('Error generating voice:', error);
+    } finally {
+      setIsVoiceLoading(false);
     }
   };
 
   const generateMovie = async () => {
+    setIsMovieLoading(true);
     if (!videoUrl || !voiceUrl || !musicUrl) {
       alert('Please generate all necessary files (video, voice, and music) first.');
       return;
@@ -349,6 +369,8 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
     } catch (error) {
       console.error('Error generating movie:', error);
       alert(`Failed to generate movie: ${error.message}`);
+    } finally {
+      setIsMovieLoading(false);
     }
   };
 
@@ -369,8 +391,14 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
 
 
       <h3>Voice Generation</h3>
-      <button onClick={generateVoice}>Generate Voice Narration</button>
-      {voiceUrl && (
+      <button
+        onClick={generateVoice}
+        disabled={isVoiceLoading}
+        className={isVoiceLoading ? 'button-disabled' : ''}
+      >
+        {isVoiceLoading && <span className="loading-spinner" />}
+        {isVoiceLoading ? 'Generating Voice...' : 'Generate Voice Narration'}
+      </button>      {voiceUrl && (
         <audio
           key={voiceKey}
           controls
@@ -383,8 +411,14 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
       <h3>Music Generation</h3>
       <div style={{ marginBottom: '20px' }}>
         <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-          <button onClick={generateMusic}>Generate Music from Prompts above</button>
-          <button onClick={() => setShowSpotifyInput(!showSpotifyInput)}>
+          <button
+            onClick={generateMusic}
+            disabled={isMusicLoading}
+            className={isMusicLoading ? 'button-disabled' : ''}
+          >
+            {isMusicLoading && <span className="loading-spinner" />}
+            {isMusicLoading ? 'Generating Music...' : 'Generate Music from Prompts above'}
+          </button>          <button onClick={() => setShowSpotifyInput(!showSpotifyInput)}>
             Import from Spotify
           </button>
           <button onClick={() => {
@@ -492,9 +526,11 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
       <h3>Video Generation</h3>
       <button
         onClick={generateVideoPrompts}
-        className="generate-button"
+        disabled={isPromptsLoading}
+        className={isPromptsLoading ? 'button-disabled' : ''}
       >
-        Generate Video Prompts
+        {isPromptsLoading && <span className="loading-spinner" />}
+        {isPromptsLoading ? 'Generating Prompts...' : 'Generate Video Prompts'}
       </button>
 
       <div className="video-prompts-container" style={{ marginTop: '20px' }}>
@@ -519,11 +555,11 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
 
       <button
         onClick={generateVideo}
-        disabled={!videoPrompts[0] || !videoPrompts[1]}
-        className="generate-button"
-        style={{ marginTop: '10px' }}
+        disabled={isVideoLoading || !videoPrompts[0] || !videoPrompts[1]}
+        className={isVideoLoading ? 'button-disabled' : ''}
       >
-        Generate Video
+        {isVideoLoading && <span className="loading-spinner" />}
+        {isVideoLoading ? 'Generating Video...' : 'Generate Video'}
       </button>
 
       {videoUrl && (
@@ -540,8 +576,14 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
 
 
       <h3>Music Video Generation</h3>
-      <button onClick={generateMovie}>Generate Music Video</button>
-      {movieUrl && (
+      <button
+        onClick={generateMovie}
+        disabled={isMovieLoading}
+        className={isMovieLoading ? 'button-disabled' : ''}
+      >
+        {isMovieLoading && <span className="loading-spinner" />}
+        {isMovieLoading ? 'Generating Music Video...' : 'Generate Music Video'}
+      </button>      {movieUrl && (
         <div style={{ marginTop: '20px' }}>
           <video
             key={movieKey}
