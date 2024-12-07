@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import styles from '../styles/AudioTrimmer.module.css';
 
 const AudioTrimmer = ({ onSave, targetDuration }) => {
     const waveSurferRef = useRef(null);
@@ -130,47 +131,47 @@ const AudioTrimmer = ({ onSave, targetDuration }) => {
     };
 
     return (
-        <div className="p-6 max-w-3xl mx-auto bg-white rounded-lg shadow">
-            <div className="mb-6">
+        <div className={styles.audioTrimmer}>
+            <div className={styles.fileInputContainer}>
                 <input
                     type="file"
                     accept="audio/*"
                     onChange={handleFileChange}
-                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
+                    className={styles.fileInput}
                 />
             </div>
 
             {error && (
-                <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-md">
+                <div className={styles.errorMessage}>
                     {error}
                 </div>
             )}
 
-            <div className="mb-4 text-sm text-gray-600">
+            <div className={styles.fileInfo}>
                 {audioFile && <p>Selected file: {audioFile.name} ({audioFile.type})</p>}
                 {duration > 0 && <p>Duration: {duration.toFixed(2)}s</p>}
             </div>
 
-            <div ref={containerRef} className="bg-gray-50 rounded-lg border border-gray-200 mb-4" />
+            <div ref={containerRef} className={styles.waveContainer} />
 
-            <div className="flex gap-4">
+            <div className={styles.buttonGroup}>
                 <button
                     onClick={handlePlayPause}
                     disabled={!waveSurferRef.current}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50"
+                    className={`${styles.button} ${styles.buttonPlay}`}
                 >
                     {isPlaying ? 'Pause' : 'Play'}
                 </button>
                 <button
                     onClick={handleTrimAndSave}
                     disabled={isProcessing || !audioFile}
-                    className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50"
+                    className={`${styles.button} ${styles.buttonSave}`}
                 >
                     {isProcessing ? 'Processing...' : 'Use Trimmed Audio'}
                 </button>
             </div>
 
-            <div className="flex flex-col mt-4">
+            <div className={styles.trimRange}>
                 <p>Selected Trim Range: {startTime.toFixed(2)}s - {endTime.toFixed(2)}s</p>
             </div>
         </div>

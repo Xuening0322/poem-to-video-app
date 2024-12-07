@@ -1,0 +1,126 @@
+.audioTrimmer {
+    padding: var(--padding, 20px);
+    max-width: var(--max-width, 800px);
+    margin: 0 auto;
+    background-color: var(--input-background-color, #fff);
+    border-radius: var(--border-radius, 12px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.fileInputContainer {
+    margin-bottom: 20px;
+}
+
+.fileInput {
+    width: 100%;
+    font-size: 14px;
+    color: var(--text-color, #333);
+}
+
+.fileInput:global(::file-selector-button) {
+    margin-right: 16px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: var(--border-radius, 12px);
+    font-size: 14px;
+    font-weight: 500;
+    color: #fff;
+    background-color: #007bff;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.fileInput:global(::file-selector-button):hover {
+    background-color: #0056b3;
+}
+
+.errorMessage {
+    margin-bottom: 16px;
+    padding: 16px;
+    background-color: #fee2e2;
+    color: #dc2626;
+    border-radius: var(--border-radius, 12px);
+}
+
+.fileInfo {
+    margin-bottom: 16px;
+    font-size: 14px;
+    color: var(--text-color, #333);
+}
+
+.waveContainer {
+    background-color: var(--background-color, #f9f9f9);
+    border: 1px solid var(--input-border-color, #ccc);
+    border-radius: var(--border-radius, 12px);
+    margin-bottom: 16px;
+    padding: 20px;
+}
+
+.buttonGroup {
+    display: flex;
+    gap: 16px;
+}
+
+.button {
+    padding: 10px 20px;
+    font-weight: 500;
+    border: none;
+    border-radius: var(--border-radius, 12px);
+    cursor: pointer;
+    transition: background-color 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    background-color: #007bff;
+}
+
+.button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.buttonPlay {
+    background-color: #007bff;
+}
+
+.buttonPlay:hover:not(:disabled) {
+    background-color: #0056b3;
+}
+
+.buttonSave {
+    background-color: #007bff;
+}
+
+.buttonSave:hover:not(:disabled) {
+    background-color: #0056b3;
+}
+
+.trimRange {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+}
+
+.trimRange p {
+    margin: 0;
+    color: var(--text-color, #333);
+}
+
+/* Loading spinner styles */
+.button:disabled :global(.loading-spinner) {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-right: 8px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
