@@ -1,4 +1,4 @@
-const axios = require("axios");
+import { ElevenLabsClient } from "elevenlabs";
 const path = require("path");
 const fs = require("fs").promises;
 
@@ -21,29 +21,19 @@ export default async function handler(req, res) {
 
   let poemText = poem.replace(/([.,;:])/g, "---------------");
   const voiceId = "GBv7mTt0atIp3Br8iCZE";
-  const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
 
-  const payload = {
-    text: poemText,
-    model_id: "eleven_monolingual_v1",
-    voice_settings: {
-      stability: 0.5,
-      similarity_boost: 0.5
-    }
-  };
-
-  const headers = {
-    'xi-api-key': process.env.XI_API_KEY,
-    'Accept': 'audio/mpeg',
-    'Content-Type': 'application/json'
-  };
+  const client = new ElevenLabsClient({
+    apiKey: process.env.XI_API_KEY
+  });
 
   try {
-    const response = await axios.post(url, payload, {
-      headers,
-      responseType: 'arraybuffer',
-      maxBodyLength: Infinity,
-      timeout: 30000
+    const audioBuffer = await client.textToSpeech.convert(voiceId, {
+      text: poemText,
+      model_id: "eleven_monolingual_v1",
+      voice_settings: {
+        stability: 0.5,
+        similarity_boost: 0.5
+      }
     });
 
     const assetsDir = path.join(process.cwd(), 'public/assets');
@@ -56,15 +46,14 @@ export default async function handler(req, res) {
     const filePath = path.join(__dirname, '../../../../public/assets', 'generatedVoice.mp3');
     const fileUrl = '/assets/generatedVoice.mp3';
 
-    await fs.writeFile(filePath, response.data);
+    await fs.writeFile(filePath, audioBuffer);
     console.log(`File written successfully to: ${filePath}`);
     
-    // Send plain text response instead of JSON
     res.setHeader('Content-Type', 'text/plain');
     res.send(fileUrl);
     
   } catch (error) {
-    console.error('Error:', error.message);
+    console.error('Error:', error);
     return res.status(500).json({ 
       message: 'Error generating voice',
       error: error.message
