@@ -14,6 +14,7 @@ const AudioTrimmer = ({ onSave, targetDuration }) => {
     const [endTime, setEndTime] = useState(targetDuration || 15);
     const [error, setError] = useState(null);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [desiredDuration, setDesiredDuration] = useState(targetDuration || 15);
 
     useEffect(() => {
         const initializeWaveSurfer = async () => {
@@ -47,8 +48,7 @@ const AudioTrimmer = ({ onSave, targetDuration }) => {
                     const totalDuration = waveSurferRef.current.getDuration();
                     setDuration(totalDuration);
                     
-                    // Use targetDuration if provided, otherwise use default or total duration
-                    const initialEndTime = Math.min(targetDuration || 15, totalDuration);
+                    const initialEndTime = Math.min(desiredDuration, totalDuration);
                     setEndTime(initialEndTime);
 
                     waveSurferRef.current.addRegion({
@@ -72,7 +72,7 @@ const AudioTrimmer = ({ onSave, targetDuration }) => {
         initializeWaveSurfer();
 
         return () => waveSurferRef.current && waveSurferRef.current.destroy();
-    }, [audioURL]);
+    }, [audioURL, desiredDuration]);
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
@@ -94,6 +94,21 @@ const AudioTrimmer = ({ onSave, targetDuration }) => {
                 waveSurferRef.current.pause();
             }
             setIsPlaying(!isPlaying);
+        }
+    };
+
+    const handleDurationChange = (e) => {
+        const value = parseFloat(e.target.value);
+        if (!isNaN(value) && value > 0) {
+            setDesiredDuration(value);
+            if (waveSurferRef.current) {
+                const region = waveSurferRef.current.regions.list[Object.keys(waveSurferRef.current.regions.list)[0]];
+                if (region) {
+                    const newEnd = Math.min(value, duration);
+                    region.end = newEnd;
+                    setEndTime(newEnd);
+                }
+            }
         }
     };
 
@@ -119,8 +134,6 @@ const AudioTrimmer = ({ onSave, targetDuration }) => {
 
             const blob = await response.blob();
             const url = URL.createObjectURL(blob);
-            
-            // Call the onSave prop with the URL
             onSave?.(url);
             
         } catch (error) {
@@ -147,33 +160,50 @@ const AudioTrimmer = ({ onSave, targetDuration }) => {
                 </div>
             )}
 
-            <div className={styles.fileInfo}>
-                {audioFile && <p>Selected file: {audioFile.name} ({audioFile.type})</p>}
-                {duration > 0 && <p>Duration: {duration.toFixed(2)}s</p>}
-            </div>
+            {audioFile && (
+                <>
+                    <div className={styles.durationInput}>
+                        <label htmlFor="duration">Desired Duration (seconds): </label>
+                        <input
+                            type="number"
+                            id="duration"
+                            value={desiredDuration}
+                            onChange={handleDurationChange}
+                            min="1"
+                            step="0.1"
+                            className={styles.numberInput}
+                        />
+                    </div>
 
-            <div ref={containerRef} className={styles.waveContainer} />
+                    <div className={styles.fileInfo}>
+                        <p>Selected file: {audioFile.name} ({audioFile.type})</p>
+                        {duration > 0 && <p>Duration: {duration.toFixed(2)}s</p>}
+                    </div>
 
-            <div className={styles.buttonGroup}>
-                <button
-                    onClick={handlePlayPause}
-                    disabled={!waveSurferRef.current}
-                    className={`${styles.button} ${styles.buttonPlay}`}
-                >
-                    {isPlaying ? 'Pause' : 'Play'}
-                </button>
-                <button
-                    onClick={handleTrimAndSave}
-                    disabled={isProcessing || !audioFile}
-                    className={`${styles.button} ${styles.buttonSave}`}
-                >
-                    {isProcessing ? 'Processing...' : 'Use Trimmed Audio'}
-                </button>
-            </div>
+                    <div ref={containerRef} className={styles.waveContainer} />
 
-            <div className={styles.trimRange}>
-                <p>Selected Trim Range: {startTime.toFixed(2)}s - {endTime.toFixed(2)}s</p>
-            </div>
+                    <div className={styles.buttonGroup}>
+                        <button
+                            onClick={handlePlayPause}
+                            disabled={!waveSurferRef.current}
+                            className={`${styles.button} ${styles.buttonPlay}`}
+                        >
+                            {isPlaying ? 'Pause' : 'Play'}
+                        </button>
+                        <button
+                            onClick={handleTrimAndSave}
+                            disabled={isProcessing}
+                            className={`${styles.button} ${styles.buttonSave}`}
+                        >
+                            {isProcessing ? 'Processing...' : 'Use Trimmed Audio'}
+                        </button>
+                    </div>
+
+                    <div className={styles.trimRange}>
+                        <p>Selected Trim Range: {startTime.toFixed(2)}s - {endTime.toFixed(2)}s</p>
+                    </div>
+                </>
+            )}
         </div>
     );
 };

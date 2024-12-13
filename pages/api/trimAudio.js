@@ -48,7 +48,6 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid start or end time' });
     }
 
-    // 使用固定的输出文件名
     const outputPath = path.join(assetsDir, 'trimmed_audio.mp3');
 
     await new Promise((resolve, reject) => {
