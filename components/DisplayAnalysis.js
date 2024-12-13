@@ -158,8 +158,6 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
       setMusicSource('spotify');
       setAudioKey(prevKey => prevKey + 1); // Increment audio key when new track is imported
 
-      // Analyze the imported music
-      await analyzeMusicFeatures(result.track.id);
     } catch (error) {
       setError(error.message);
       console.error('Error importing Spotify track:', error);
@@ -168,27 +166,6 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
     }
   };
 
-  const analyzeMusicFeatures = async (trackId) => {
-    try {
-      const response = await fetch('/api/spotify/analyze', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ trackId })
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const analysis = await response.json();
-      setMusicAnalysis(analysis);
-    } catch (error) {
-      setError('Failed to analyze music features');
-      console.error('Error analyzing music:', error);
-    }
-  };
 
   const generateVideo = async () => {
     setIsVideoLoading(true);
