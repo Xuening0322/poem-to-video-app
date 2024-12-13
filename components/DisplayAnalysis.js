@@ -351,6 +351,36 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
     }
   };
 
+  const handleSpotifyClick = () => {
+    setShowSpotifyInput(!showSpotifyInput);
+    // Clear audio trimmer when switching to Spotify
+    if (!showSpotifyInput) {
+      setShowAudioTrimmer(false);
+      setRealBlobUrl('');
+      if (musicSource === 'uploaded') {
+        setMusicUrl('');
+        setMusicSource(null);
+        setAudioKey(prevKey => prevKey + 1);
+      }
+    }
+  };
+
+  const handleAudioTrimmerClick = () => {
+    setShowAudioTrimmer(!showAudioTrimmer);
+    // Clear Spotify when switching to trimmer
+    if (!showAudioTrimmer) {
+      setShowSpotifyInput(false);
+      setSpotifyUrl('');
+      setSpotifyTrack(null);
+      if (musicSource === 'spotify') {
+        setMusicUrl('');
+        setMusicSource(null);
+        setAudioKey(prevKey => prevKey + 1);
+      }
+    }
+  };
+
+
 
   return (
     <div className="display-analysis">
@@ -385,8 +415,8 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
         </audio>
       )}
 
-      <h3>Music Generation</h3>
-      <div style={{ marginBottom: '20px' }}>
+        <h3>Music Generation</h3>
+        <div style={{ marginBottom: '20px' }}>
         <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
           <button
             onClick={generateMusic}
@@ -395,13 +425,11 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
           >
             {isMusicLoading && <span className="loading-spinner" />}
             {isMusicLoading ? 'Generating Music...' : 'Generate Music from Prompts above'}
-          </button>          <button onClick={() => setShowSpotifyInput(!showSpotifyInput)}>
+          </button>
+          <button onClick={handleSpotifyClick}>
             Import from Spotify
           </button>
-          <button onClick={() => {
-            setShowAudioTrimmer(!showAudioTrimmer);
-            setShowSpotifyInput(false);
-          }}>
+          <button onClick={handleAudioTrimmerClick}>
             Upload & Trim Audio
           </button>
         </div>
