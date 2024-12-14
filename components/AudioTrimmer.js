@@ -15,6 +15,13 @@ const AudioTrimmer = ({ onSave, targetDuration, initialAudioUrl }) => {
     const [error, setError] = useState(null);
     const [isProcessing, setIsProcessing] = useState(false);
     const [desiredDuration, setDesiredDuration] = useState(targetDuration || 15);
+    const [isClient, setIsClient] = useState(false);
+
+    // Check if we're on the client
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
 
     useEffect(() => {
         if (initialAudioUrl) {
@@ -35,11 +42,14 @@ const AudioTrimmer = ({ onSave, targetDuration, initialAudioUrl }) => {
     }, [initialAudioUrl]);
 
     useEffect(() => {
-        const initializeWaveSurfer = async () => {
-            const WaveSurfer = (await import('wavesurfer.js')).default;
-            const RegionsPlugin = (await import('wavesurfer.js/dist/plugin/wavesurfer.regions.min.js')).default;
+        if (!isClient || !audioURL) return;
 
-            if (typeof window !== 'undefined' && audioURL) {
+        const initializeWaveSurfer = async () => {
+            try {
+                // Dynamic imports
+                const WaveSurfer = (await import('wavesurfer.js')).default;
+                const RegionsPlugin = (await import('wavesurfer.js/dist/plugin/wavesurfer.regions.min.js')).default;
+
                 if (waveSurferRef.current) {
                     waveSurferRef.current.destroy();
                 }
@@ -84,13 +94,20 @@ const AudioTrimmer = ({ onSave, targetDuration, initialAudioUrl }) => {
                 });
 
                 waveSurferRef.current.load(audioURL);
+            } catch (error) {
+                console.error('Error initializing WaveSurfer:', error);
+                setError('Failed to initialize audio visualizer');
             }
         };
 
         initializeWaveSurfer();
 
-        return () => waveSurferRef.current && waveSurferRef.current.destroy();
-    }, [audioURL, desiredDuration]);
+        return () => {
+            if (waveSurferRef.current) {
+                waveSurferRef.current.destroy();
+            }
+        };
+    }, [audioURL, desiredDuration, isClient]);
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
@@ -160,6 +177,10 @@ const AudioTrimmer = ({ onSave, targetDuration, initialAudioUrl }) => {
             setIsProcessing(false);
         }
     };
+
+    if (!isClient) {
+        return null;
+    }
 
     return (
         <div className={styles.audioTrimmer}>
