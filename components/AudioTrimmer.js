@@ -145,6 +145,32 @@ const AudioTrimmer = ({ onSave, targetDuration }) => {
 
     return (
         <div className={styles.audioTrimmer}>
+            <div className={styles.infoBox} style={{
+                padding: '12px',
+                backgroundColor: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: '6px',
+                marginBottom: '16px'
+            }}>
+                <p style={{ 
+                    fontSize: '0.95em', 
+                    marginBottom: '8px',
+                    color: '#1e293b',
+                    fontWeight: '500'
+                }}>
+                    Voice Narration Length: {targetDuration.toFixed(1)} seconds
+                </p>
+                <p style={{ 
+                    fontSize: '0.9em',
+                    color: '#475569',
+                    lineHeight: '1.5'
+                }}>
+                    Your music will automatically adjust to match the voice narration length. 
+                    If longer, it will be cut off; if shorter, it will loop. 
+                    For best results, try to trim your music to {targetDuration.toFixed(1)} seconds.
+                </p>
+            </div>
+
             <div className={styles.fileInputContainer}>
                 <input
                     type="file"
