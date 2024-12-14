@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import styles from '../styles/AudioTrimmer.module.css';
 
-const AudioTrimmer = ({ onSave, targetDuration }) => {
+const AudioTrimmer = ({ onSave, targetDuration, initialAudioUrl }) => {
     const waveSurferRef = useRef(null);
     const containerRef = useRef(null);
     const [audioFile, setAudioFile] = useState(null);
@@ -15,6 +15,24 @@ const AudioTrimmer = ({ onSave, targetDuration }) => {
     const [error, setError] = useState(null);
     const [isProcessing, setIsProcessing] = useState(false);
     const [desiredDuration, setDesiredDuration] = useState(targetDuration || 15);
+
+    useEffect(() => {
+        if (initialAudioUrl) {
+            const loadInitialAudio = async () => {
+                try {
+                    const response = await fetch(initialAudioUrl);
+                    const blob = await response.blob();
+                    const file = new File([blob], 'spotify-audio.mp3', { type: 'audio/mpeg' });
+                    const url = URL.createObjectURL(blob);
+                    setAudioFile(file);
+                    setAudioURL(url);
+                } catch (error) {
+                    setError('Failed to load audio file');
+                }
+            };
+            loadInitialAudio();
+        }
+    }, [initialAudioUrl]);
 
     useEffect(() => {
         const initializeWaveSurfer = async () => {
@@ -171,14 +189,16 @@ const AudioTrimmer = ({ onSave, targetDuration }) => {
                 </p>
             </div>
 
-            <div className={styles.fileInputContainer}>
-                <input
-                    type="file"
-                    accept="audio/*"
-                    onChange={handleFileChange}
-                    className={styles.fileInput}
-                />
-            </div>
+            {!initialAudioUrl && (
+                <div className={styles.fileInputContainer}>
+                    <input
+                        type="file"
+                        accept="audio/*"
+                        onChange={handleFileChange}
+                        className={styles.fileInput}
+                    />
+                </div>
+            )}
 
             {error && (
                 <div className={styles.errorMessage}>
@@ -202,7 +222,7 @@ const AudioTrimmer = ({ onSave, targetDuration }) => {
                     </div>
 
                     <div className={styles.fileInfo}>
-                        <p>Selected file: {audioFile.name} ({audioFile.type})</p>
+                        {!initialAudioUrl && <p>Selected file: {audioFile.name} ({audioFile.type})</p>}
                         {duration > 0 && <p>Duration: {duration.toFixed(2)}s</p>}
                     </div>
 

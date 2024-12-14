@@ -453,6 +453,7 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
                     </button>
                 </div>
 
+
                 {showSpotifyInput && (
                     <div style={{ marginTop: '10px' }}>
                         <p style={{ fontSize: '0.9em', color: '#666', marginBottom: '5px' }}>
@@ -488,12 +489,50 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
                     </div>
                 )}
 
+                {spotifyTrack && !showAudioTrimmer && (
+                    <div style={{ marginTop: '10px' }}>
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px',
+                            marginBottom: '10px'
+                        }}>
+                            <p>Imported: {spotifyTrack.name} - {spotifyTrack.artists[0].name}</p>
+                            <button
+                                onClick={() => {
+                                    setShowSpotifyInput(false);
+                                    setShowAudioTrimmer(true);
+                                }}
+                                style={{
+                                    padding: '4px 8px',
+                                    fontSize: '0.9em',
+                                    backgroundColor: '#f3f4f6',
+                                    border: '1px solid #d1d5db',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                Want to trim this track?
+                            </button>
+                        </div>
+                        <audio key={audioKey} controls>
+                            <source src={musicUrl} type="audio/mpeg" />
+                            Your browser does not support the audio element.
+                        </audio>
+                    </div>
+                )}
+
                 {showAudioTrimmer && (
                     <div style={{ marginTop: '20px', padding: '20px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                             <h4 style={{ margin: 0 }}>Audio Trimmer</h4>
                             <button
-                                onClick={() => setShowAudioTrimmer(false)}
+                                onClick={() => {
+                                    setShowAudioTrimmer(false);
+                                    if (musicSource === 'spotify') {
+                                        setShowSpotifyInput(true);
+                                    }
+                                }}
                                 className="text-gray-500 hover:text-gray-700"
                                 style={{ background: 'none', border: 'none', cursor: 'pointer' }}
                             >
@@ -509,6 +548,7 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
                                 setShowAudioTrimmer(false);
                             }}
                             targetDuration={voiceDuration}
+                            initialAudioUrl={musicSource === 'spotify' ? musicUrl : null}
                         />
                     </div>
                 )}
@@ -520,15 +560,6 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
                 )}
             </div>
 
-            {musicUrl && (
-                <audio
-                    key={audioKey}
-                    controls
-                >
-                    <source src={musicUrl} type="audio/mpeg" />
-                    Your browser does not support the audio element.
-                </audio>
-            )}
 
             {musicAnalysis && (
                 <div style={{ marginTop: '20px', marginBottom: '20px' }}>
