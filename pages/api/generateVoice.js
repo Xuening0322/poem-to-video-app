@@ -1,8 +1,34 @@
 import { ElevenLabsClient } from "elevenlabs";
-const path = require("path");
-const fs = require("fs").promises;
-const { Storage } = require('@google-cloud/storage');
-const { Readable } = require('stream');
+import path from "path";
+import fs from "fs/promises";
+import { Storage } from '@google-cloud/storage';
+
+// Initialize Google Cloud Storage
+const storage = new Storage({
+  keyFilename: path.join(process.cwd(), 'gcp-key.json')
+});
+const bucket = storage.bucket('poem-to-video');
+
+async function uploadToGCP(filePath, gcsFilename) {
+  try {
+    console.log('Starting upload for file:', gcsFilename);
+    
+    // Upload file to GCS
+    await bucket.upload(filePath, {
+      destination: gcsFilename,
+      metadata: {
+        contentType: 'audio/mpeg'
+      }
+    });
+
+    const publicUrl = `https://storage.googleapis.com/poem-to-video/${encodeURIComponent(gcsFilename)}`;
+    console.log('File uploaded successfully:', publicUrl);
+    return publicUrl;
+  } catch (error) {
+    console.error('Upload error:', error);
+    throw error;
+  }
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -22,10 +48,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Initialize GCP Storage
-    const storage = new Storage();
-    const bucket = storage.bucket('poem-to-video');
-
     let poemText = poem.replace(/([.,;:])/g, "---------------");
     const voiceId = "GBv7mTt0atIp3Br8iCZE";
 
@@ -44,35 +66,32 @@ export default async function handler(req, res) {
     });
 
     // Save locally first
-    const filePath = path.join(__dirname, '../../../../public/assets', 'generatedVoice.mp3');
+    const assetsDir = path.join(process.cwd(), 'public/assets');
+    await fs.mkdir(assetsDir, { recursive: true });
+    const localFilename = 'generatedVoice.mp3';
+    const filePath = path.join(assetsDir, localFilename);
     await fs.writeFile(filePath, audioBuffer);
     console.log(`File written successfully to: ${filePath}`);
 
-    // Generate a unique filename for GCS
-    const gcsFilename = `generatedVoice_${Date.now()}.mp3`;
-    const file = bucket.file(gcsFilename);
+    try {
+      // Generate timestamp-based filename for GCS
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const gcsFilename = `voices/${timestamp}-voice.mp3`;
 
-    // Upload file from disk to GCS
-    await bucket.upload(filePath, {
-      destination: gcsFilename,
-      metadata: {
-        contentType: 'audio/mpeg'
-      }
-    });
-
-    // Get the public URL
-    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${gcsFilename}`;
-
-    // Return both local and GCS URLs
-    res.status(200).json({
-      localUrl: '/assets/generatedVoice.mp3',
-      gcsUrl: publicUrl,
-      filename: gcsFilename
-    });
+      // Upload the local file to GCP
+      const publicUrl = await uploadToGCP(filePath, gcsFilename);
+      
+      // Still return local URL for now
+      res.status(200).send('/assets/generatedVoice.mp3');
+    } catch (uploadError) {
+      console.error('GCS upload failed, falling back to local URL:', uploadError);
+      // If GCS upload fails, return just the local URL
+      res.status(200).send('/assets/generatedVoice.mp3');
+    }
 
   } catch (error) {
     console.error('Error:', error);
-    return res.status(500).json({ 
+    res.status(500).json({ 
       message: 'Error in file operations',
       error: error.message
     });
