@@ -380,7 +380,6 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
         }
     };
 
-
     const handleMusicAction = (action) => {
         if (!voiceUrl) {
             alert('Please generate voice narration first.');
@@ -397,23 +396,6 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
             case 'trimmer':
                 handleAudioTrimmerClick();
                 break;
-        }
-    };
-
-    const handleSpotifyToTrimmer = async () => {
-        try {
-            // Download from the preview URL
-            const response = await fetch(musicUrl);
-            const blob = await response.blob();
-            const url = URL.createObjectURL(blob);
-
-            // Set up trimmer with the downloaded audio
-            setRealBlobUrl(url);
-            setShowSpotifyInput(false);
-            setShowAudioTrimmer(true);
-        } catch (error) {
-            console.error('Error preparing audio for trimming:', error);
-            alert('Failed to prepare audio for trimming. Please try again.');
         }
     };
 
@@ -511,10 +493,7 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                             <h4 style={{ margin: 0 }}>Audio Trimmer</h4>
                             <button
-                                onClick={() => {
-                                    setShowAudioTrimmer(false);
-                                    setSpotifyTrack(null);  // Clear Spotify track when closing
-                                }}
+                                onClick={() => setShowAudioTrimmer(false)}
                                 className="text-gray-500 hover:text-gray-700"
                                 style={{ background: 'none', border: 'none', cursor: 'pointer' }}
                             >
@@ -528,46 +507,28 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
                                 setMusicSource('uploaded');
                                 setAudioKey(prevKey => prevKey + 1);
                                 setShowAudioTrimmer(false);
-                                setSpotifyTrack(null);  // Clear Spotify track after saving
                             }}
                             targetDuration={voiceDuration}
-                            initialAudio={spotifyTrack ? musicUrl : null}  // Pass the Spotify URL if available
                         />
                     </div>
                 )}
 
-                {spotifyTrack && !showAudioTrimmer && (
+                {spotifyTrack && (
                     <div style={{ marginTop: '10px' }}>
-                        <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '10px',
-                            marginBottom: '10px'
-                        }}>
-                            <p>Imported: {spotifyTrack.name} - {spotifyTrack.artists[0].name}</p>
-                            <button
-                                onClick={handleSpotifyToTrimmer}
-                                style={{
-                                    padding: '4px 8px',
-                                    fontSize: '0.9em',
-                                    backgroundColor: '#f3f4f6',
-                                    border: '1px solid #d1d5db',
-                                    borderRadius: '4px',
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                Want to trim this track?
-                            </button>
-                        </div>
-                        {musicUrl && !showAudioTrimmer && (
-                            <audio key={audioKey} controls>
-                                <source src={musicUrl} type="audio/mpeg" />
-                                Your browser does not support the audio element.
-                            </audio>
-                        )}
+                        <p>Imported: {spotifyTrack.name} - {spotifyTrack.artists[0].name}</p>
                     </div>
                 )}
             </div>
+
+            {musicUrl && (
+                <audio
+                    key={audioKey}
+                    controls
+                >
+                    <source src={musicUrl} type="audio/mpeg" />
+                    Your browser does not support the audio element.
+                </audio>
+            )}
 
             {musicAnalysis && (
                 <div style={{ marginTop: '20px', marginBottom: '20px' }}>
