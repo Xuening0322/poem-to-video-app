@@ -16,10 +16,10 @@ WORKDIR /app
 
 RUN apk add --no-cache git
 
-RUN git clone https://github.com/SwapnilSoni1999/spotify-dl
-RUN cd spotify-dl
-RUN npm install
-RUN npm link
+RUN git clone https://github.com/SwapnilSoni1999/spotify-dl /spotify-dl \
+    && cd /spotify-dl \
+    && npm install \
+    && npm link
 
 COPY --from=builder /app/ ./
 
