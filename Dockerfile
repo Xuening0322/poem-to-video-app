@@ -14,7 +14,10 @@ FROM node:18-alpine as runner
 
 WORKDIR /app
 
-RUN npm install -g https://github.com/swapnilsoni1999/spotify-dl
+RUN git clone https://github.com/SwapnilSoni1999/spotify-dl
+RUN cd spotify-dl
+RUN npm install
+RUN npm link
 
 COPY --from=builder /app/ ./
 
