@@ -71,8 +71,6 @@ export default async function handler(req, res) {
   }
 
   const assetsDir = path.join(process.cwd(), 'public/assets');
-  let inputFilePath = null;
-  let outputFilePath = null;
 
   try {
     // Create assets directory if it doesn't exist
@@ -103,14 +101,13 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid start or end time' });
     }
 
-    inputFilePath = audioFile.filepath;
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const outputFilename = `trimmed-${timestamp}.mp3`;
-    outputFilePath = path.join(assetsDir, outputFilename);
+    const outputFilePath = path.join(assetsDir, outputFilename);
 
     // Process audio with FFmpeg
     await new Promise((resolve, reject) => {
-      let ffmpegCommand = ffmpeg(inputFilePath)
+      let ffmpegCommand = ffmpeg(audioFile.filepath)
         .toFormat('mp3')
         .setStartTime(startTime)
         .duration(endTime - startTime)
@@ -145,20 +142,6 @@ export default async function handler(req, res) {
       fileUrl = '/assets/' + outputFilename;
     }
 
-    // Clean up input file
-    try {
-      if (inputFilePath && fs.existsSync(inputFilePath)) {
-        await fs.unlink(inputFilePath);
-      }
-      
-      // In production, also clean up the processed file after upload
-      if (process.env.NODE_ENV === 'production' && outputFilePath && fs.existsSync(outputFilePath)) {
-        await fs.unlink(outputFilePath);
-      }
-    } catch (err) {
-      console.error('Error cleaning up files:', err);
-    }
-
     return res.status(200).json({
       url: fileUrl,
       filename: outputFilename,
@@ -167,19 +150,6 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('Error processing audio:', error);
-    
-    // Clean up any leftover files on error
-    try {
-      if (inputFilePath && fs.existsSync(inputFilePath)) {
-        await fs.unlink(inputFilePath);
-      }
-      if (outputFilePath && fs.existsSync(outputFilePath)) {
-        await fs.unlink(outputFilePath);
-      }
-    } catch (cleanupError) {
-      console.error('Cleanup error:', cleanupError);
-    }
-
     return res.status(500).json({ 
       error: 'Failed to process audio',
       details: error.message || error.toString()
