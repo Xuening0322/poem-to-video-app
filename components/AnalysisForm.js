@@ -21,7 +21,7 @@ const AnalysisForm = ({ onSubmit }) => {
         value={poem}
         onChange={(e) => setPoem(e.target.value)}
         placeholder="Type or paste your poem here..."
-        rows="10"
+        rows="15"
         cols="50"
         className="analysis-textarea"
         disabled={isAnalyzing}

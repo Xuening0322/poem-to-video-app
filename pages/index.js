@@ -54,7 +54,16 @@ export default function Home() {
       </Link>
       <SettingsSidebar settings={settings} onSettingsChange={handleSettingsChange} />
       <AnalysisForm onSubmit={handlePoemSubmit} />
-      <DisplayAnalysis analysis={analysis} duration={settings.duration} poemText={poem} bpm={settings.bpm} videoStyle={settings.videoStyle} />
+      {analysis && (
+        <DisplayAnalysis
+          analysis={analysis}
+          duration={settings.duration}
+          poemText={poem}
+          bpm={settings.bpm}
+          videoStyle={settings.videoStyle}
+        />
+      )}
+
     </div>
   );
 }

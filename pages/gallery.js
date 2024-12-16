@@ -8,7 +8,6 @@ export default function Gallery() {
   const [pageLoading, setPageLoading] = useState(true);
 
   useEffect(() => {
-    // 模拟页面资源加载
     const timer = setTimeout(() => {
       setPageLoading(false);
     }, 1500);

@@ -379,7 +379,7 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
 
     return (
         <div className="display-analysis">
-            <h3>Poem Analysis</h3>
+            <h3>🎭 Poem Analysis</h3>
             <label>Themes:</label>
             <textarea value={themes} onChange={handleChange(setThemes)} rows="2" />
             <label>Literals:</label>
@@ -392,218 +392,235 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
             <textarea value={prompt} onChange={handleChange(setPrompt)} rows="4" />
 
 
-            <h3>Voice Generation</h3>
-            <button
-                onClick={generateVoice}
-                disabled={isVoiceLoading}
-                className={isVoiceLoading ? 'button-disabled' : ''}
-            >
-                {isVoiceLoading && <span className="loading-spinner" />}
-                {isVoiceLoading ? 'Generating Voice...' : 'Generate Voice Narration'}
-            </button>      {voiceUrl && (
-                <audio
-                    key={voiceKey}
-                    controls
-                >
-                    <source src={voiceUrl} type="audio/mpeg" />
-                    Your browser does not support the audio element.
-                </audio>
-            )}
-
-
-            <h3>Music Generation</h3>
-            <div style={{ marginBottom: '20px' }}>
-                <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+            {prompt && (
+                <>
+                    <h3>🗣 Voice Generation</h3>
                     <button
-                        onClick={() => handleMusicAction('generate')}
-                        disabled={isMusicLoading}
-                        className={isMusicLoading ? 'button-disabled' : ''}
+                        onClick={generateVoice}
+                        disabled={isVoiceLoading}
+                        className={isVoiceLoading ? 'button-disabled' : ''}
                     >
-                        {isMusicLoading && <span className="loading-spinner" />}
-                        {isMusicLoading ? 'Generating Music...' : 'Generate Music from Prompts above'}
-                    </button>
-                    <button onClick={() => handleMusicAction('spotify')}>
-                        Import from Spotify
-                    </button>
-                    <button onClick={() => handleMusicAction('trimmer')}>
-                        Upload & Trim Audio
-                    </button>
-                </div>
-
-
-                {showSpotifyInput && (
-                    <div style={{ marginTop: '10px' }}>
-                        <p style={{ fontSize: '0.9em', color: '#666', marginBottom: '5px' }}>
-                            Please paste a Spotify track URL (e.g., https://open.spotify.com/track/1301WleyT98MSxVHPZCA6M)
-                        </p>
-                        <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-                            <input
-                                type="text"
-                                value={spotifyUrl}
-                                onChange={handleChange(setSpotifyUrl)}
-                                placeholder="Paste Spotify track URL here"
-                                style={{ flex: 1 }}
-                            />
-                            <button
-                                onClick={importSpotifyTrack}
-                                disabled={isLoading || !spotifyUrl}
-                            >
-                                {isLoading ? 'Importing...' : 'Import Track'}
-                            </button>
-                        </div>
-                        {error && (
-                            <div style={{
-                                marginTop: '10px',
-                                padding: '10px',
-                                backgroundColor: '#fee2e2',
-                                color: '#dc2626',
-                                borderRadius: '4px',
-                                fontSize: '0.9em'
-                            }}>
-                                {error}
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {showAudioTrimmer && (
-                    <div style={{ marginTop: '20px', padding: '20px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                            <h4 style={{ margin: 0 }}>Audio Trimmer</h4>
-                            <button
-                                onClick={() => {
-                                    setShowAudioTrimmer(false);
-                                    if (musicSource === 'spotify') {
-                                        setShowSpotifyInput(true);
-                                    }
-                                }}
-                                className="text-gray-500 hover:text-gray-700"
-                                style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-                            >
-                                ✕
-                            </button>
-                        </div>
-                        <AudioTrimmer
-                            onSave={(trimmedAudioUrl) => {
-                                setRealBlobUrl(trimmedAudioUrl);
-                                setMusicUrl(trimmedAudioUrl);
-                                setMusicSource('uploaded');
-                                setAudioKey(prevKey => prevKey + 1);
-                                setShowAudioTrimmer(false);
-                            }}
-                            targetDuration={voiceDuration}
-                            initialAudioUrl={musicSource === 'spotify' ? musicUrl : null}
-                        />
-                    </div>
-                )}
-
-                {!showAudioTrimmer && musicUrl && (
-                    <div style={{ marginTop: '20px' }}>
-                        {spotifyTrack && (
-                            <div style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '10px',
-                                marginBottom: '10px'
-                            }}>
-                                <p>Imported: {spotifyTrack.name} - {spotifyTrack.artists[0].name}</p>
-                                <button
-                                    onClick={() => {
-                                        setShowSpotifyInput(false);
-                                        setShowAudioTrimmer(true);
-                                    }}
-                                    style={{
-                                        padding: '4px 8px',
-                                        fontSize: '0.9em',
-                                        backgroundColor: '#68bcf7',
-                                        border: '1px solid #68bcf7',
-                                        borderRadius: '4px',
-                                        cursor: 'pointer'
-                                    }}
-                                >
-                                    Want to trim this track?
-                                </button>
-                            </div>
-                        )}
-                        <audio key={audioKey} controls>
-                            <source src={musicUrl} type="audio/mpeg" />
+                        {isVoiceLoading && <span className="loading-spinner" />}
+                        {isVoiceLoading ? 'Generating Voice...' : 'Generate Voice Narration'}
+                    </button>      {voiceUrl && (
+                        <audio
+                            key={voiceKey}
+                            controls
+                        >
+                            <source src={voiceUrl} type="audio/mpeg" />
                             Your browser does not support the audio element.
                         </audio>
-                    </div>
-                )}
-
-            </div>
-
-            <h3>Video Generation</h3>
-            <button
-                onClick={generateVideoPrompts}
-                disabled={isPromptsLoading}
-                className={isPromptsLoading ? 'button-disabled' : ''}
-            >
-                {isPromptsLoading && <span className="loading-spinner" />}
-                {isPromptsLoading ? 'Generating Prompts...' : 'Generate Video Prompts'}
-            </button>
-
-            <div className="video-prompts-container" style={{ marginTop: '20px' }}>
-                <div className="prompt-section">
-                    <label style={{ display: 'block', marginBottom: '5px' }}>Start Video Prompt:</label>
-                    <textarea
-                        value={videoPrompts[0] || ''}
-                        onChange={handleVideoPromptChange(0)}
-                        rows="3"
-                    />
-                </div>
-
-                <div className="prompt-section">
-                    <label style={{ display: 'block', marginBottom: '5px' }}>End Video Prompt:</label>
-                    <textarea
-                        value={videoPrompts[1] || ''}
-                        onChange={handleVideoPromptChange(1)}
-                        rows="3"
-                    />
-                </div>
-            </div>
-
-            <button
-                onClick={generateVideo}
-                disabled={isVideoLoading || !videoPrompts[0] || !videoPrompts[1]}
-                className={isVideoLoading ? 'button-disabled' : ''}
-            >
-                {isVideoLoading && <span className="loading-spinner" />}
-                {isVideoLoading ? 'Generating Video...' : 'Generate Video'}
-            </button>
-
-            {videoUrl && (
-                <div style={{ marginTop: '20px' }}>
-                    <video
-                        key={videoKey}
-                        controls
-                    >
-                        <source src={videoUrl} type="video/mp4" />
-                        Your browser does not support the video tag.
-                    </video>
-                </div>
+                    )}
+                </>
             )}
 
 
-            <h3>Music Video Generation</h3>
-            <button
-                onClick={generateMovie}
-                disabled={isMovieLoading}
-                className={isMovieLoading ? 'button-disabled' : ''}
-            >
-                {isMovieLoading && <span className="loading-spinner" />}
-                {isMovieLoading ? 'Generating Music Video...' : 'Generate Music Video'}
-            </button>      {movieUrl && (
-                <div style={{ marginTop: '20px' }}>
-                    <video
-                        key={movieKey}
-                        controls
+            {voiceUrl && (
+                <>
+                    <h3>🎵 Music Generation</h3>
+                    <div style={{ marginBottom: '20px' }}>
+                        <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                            <button
+                                onClick={() => handleMusicAction('generate')}
+                                disabled={isMusicLoading}
+                                className={isMusicLoading ? 'button-disabled' : ''}
+                            >
+                                {isMusicLoading && <span className="loading-spinner" />}
+                                {isMusicLoading ? 'Generating Music...' : 'Generate Music from Prompts above'}
+                            </button>
+                            <button onClick={() => handleMusicAction('spotify')}>
+                                Import from Spotify
+                            </button>
+                            <button onClick={() => handleMusicAction('trimmer')}>
+                                Upload Your Own Audio
+                            </button>
+                        </div>
+
+
+                        {showSpotifyInput && (
+                            <div style={{ marginTop: '10px' }}>
+                                <p style={{ fontSize: '0.9em', color: '#666', marginBottom: '5px' }}>
+                                    Please paste a Spotify track URL (e.g., https://open.spotify.com/track/1301WleyT98MSxVHPZCA6M)
+                                </p>
+                                <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                                    <input
+                                        type="text"
+                                        value={spotifyUrl}
+                                        onChange={handleChange(setSpotifyUrl)}
+                                        placeholder="Paste Spotify track URL here"
+                                        style={{ flex: 1 }}
+                                    />
+                                    <button
+                                        onClick={importSpotifyTrack}
+                                        disabled={isLoading || !spotifyUrl}
+                                    >
+                                        {isLoading ? 'Importing...' : 'Import Track'}
+                                    </button>
+                                </div>
+                                {error && (
+                                    <div style={{
+                                        marginTop: '10px',
+                                        padding: '10px',
+                                        backgroundColor: '#fee2e2',
+                                        color: '#dc2626',
+                                        borderRadius: '4px',
+                                        fontSize: '0.9em'
+                                    }}>
+                                        {error}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {showAudioTrimmer && (
+                            <div style={{ marginTop: '20px', padding: '20px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                    <h4 style={{ margin: 0 }}>Audio Trimmer</h4>
+                                    <button
+                                        onClick={() => {
+                                            setShowAudioTrimmer(false);
+                                            if (musicSource === 'spotify') {
+                                                setShowSpotifyInput(true);
+                                            }
+                                        }}
+                                        className="text-gray-500 hover:text-gray-700"
+                                        style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+                                <AudioTrimmer
+                                    onSave={(trimmedAudioUrl) => {
+                                        setRealBlobUrl(trimmedAudioUrl);
+                                        setMusicUrl(trimmedAudioUrl);
+                                        setMusicSource('uploaded');
+                                        setAudioKey(prevKey => prevKey + 1);
+                                        setShowAudioTrimmer(false);
+                                    }}
+                                    targetDuration={voiceDuration}
+                                    initialAudioUrl={musicSource === 'spotify' ? musicUrl : null}
+                                />
+                            </div>
+                        )}
+
+                        {!showAudioTrimmer && musicUrl && (
+                            <div style={{ marginTop: '20px' }}>
+                                {spotifyTrack && (
+                                    <div style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '10px',
+                                        marginBottom: '10px'
+                                    }}>
+                                        <p>Imported: {spotifyTrack.name} - {spotifyTrack.artists[0].name}</p>
+                                        <button
+                                            onClick={() => {
+                                                setShowSpotifyInput(false);
+                                                setShowAudioTrimmer(true);
+                                            }}
+                                            style={{
+                                                padding: '4px 8px',
+                                                fontSize: '0.9em',
+                                                backgroundColor: '#68bcf7',
+                                                border: '1px solid #68bcf7',
+                                                borderRadius: '4px',
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+                                            Want to trim this track?
+                                        </button>
+                                    </div>
+                                )}
+                                <audio key={audioKey} controls>
+                                    <source src={musicUrl} type="audio/mpeg" />
+                                    Your browser does not support the audio element.
+                                </audio>
+                            </div>
+                        )}
+
+                    </div>
+
+                </>
+            )}
+
+            {musicUrl && (
+                <>
+                    <h3>🎬 Video Generation</h3>
+                    <button
+                        onClick={generateVideoPrompts}
+                        disabled={isPromptsLoading}
+                        className={isPromptsLoading ? 'button-disabled' : ''}
                     >
-                        <source src={movieUrl} type="video/mp4" />
-                        Your browser does not support the video tag.
-                    </video>
-                </div>
+                        {isPromptsLoading && <span className="loading-spinner" />}
+                        {isPromptsLoading ? 'Generating Prompts...' : 'Generate Video Prompts'}
+                    </button>
+
+                    <div className="video-prompts-container" style={{ marginTop: '20px' }}>
+                        <div className="prompt-section">
+                            <label style={{ display: 'block', marginBottom: '5px' }}>Start Video Prompt:</label>
+                            <textarea
+                                value={videoPrompts[0] || ''}
+                                onChange={handleVideoPromptChange(0)}
+                                rows="3"
+                            />
+                        </div>
+
+                        <div className="prompt-section">
+                            <label style={{ display: 'block', marginBottom: '5px' }}>End Video Prompt:</label>
+                            <textarea
+                                value={videoPrompts[1] || ''}
+                                onChange={handleVideoPromptChange(1)}
+                                rows="3"
+                            />
+                        </div>
+                    </div>
+
+                    <button
+                        onClick={generateVideo}
+                        disabled={isVideoLoading || !videoPrompts[0] || !videoPrompts[1]}
+                        className={isVideoLoading ? 'button-disabled' : ''}
+                    >
+                        {isVideoLoading && <span className="loading-spinner" />}
+                        {isVideoLoading ? 'Generating Video...' : 'Generate Video'}
+                    </button>
+
+                    {videoUrl && (
+                        <div style={{ marginTop: '20px' }}>
+                            <video
+                                key={videoKey}
+                                controls
+                            >
+                                <source src={videoUrl} type="video/mp4" />
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                    )}
+
+                </>
+            )}
+
+            {videoUrl && (
+                <>
+                    <h3>📽 Music Video Generation</h3>
+                    <button
+                        onClick={generateMovie}
+                        disabled={isMovieLoading}
+                        className={isMovieLoading ? 'button-disabled' : ''}
+                    >
+                        {isMovieLoading && <span className="loading-spinner" />}
+                        {isMovieLoading ? 'Generating Music Video...' : 'Generate Music Video'}
+                    </button>      {movieUrl && (
+                        <div style={{ marginTop: '20px' }}>
+                            <video
+                                key={movieKey}
+                                controls
+                            >
+                                <source src={movieUrl} type="video/mp4" />
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                    )}
+                </>
             )}
         </div>
     );
