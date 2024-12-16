@@ -25,13 +25,13 @@
     font-size: 14px;
     font-weight: 500;
     color: #fff;
-    background-color: #007bff;
+    background-color: #68bcf7;
     cursor: pointer;
     transition: background-color 0.2s;
 }
 
 .fileInput:global(::file-selector-button):hover {
-    background-color: #0056b3;
+    background-color: #68bcf7;
 }
 
 .errorMessage {
@@ -72,7 +72,7 @@
     align-items: center;
     justify-content: center;
     color: #fff;
-    background-color: #007bff;
+    background-color: #68bcf7;
 }
 
 .button:disabled {
@@ -81,19 +81,19 @@
 }
 
 .buttonPlay {
-    background-color: #007bff;
+    background-color: #68bcf7;
 }
 
 .buttonPlay:hover:not(:disabled) {
-    background-color: #0056b3;
+    background-color: #68bcf7;
 }
 
 .buttonSave {
-    background-color: #007bff;
+    background-color: #68bcf7;
 }
 
 .buttonSave:hover:not(:disabled) {
-    background-color: #0056b3;
+    background-color: #68bcf7;
 }
 
 .trimRange {

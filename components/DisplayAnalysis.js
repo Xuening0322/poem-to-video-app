@@ -515,8 +515,8 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
                                     style={{
                                         padding: '4px 8px',
                                         fontSize: '0.9em',
-                                        backgroundColor: '#007bff',
-                                        border: '1px solid #007bff',
+                                        backgroundColor: '#68bcf7',
+                                        border: '1px solid #68bcf7',
                                         borderRadius: '4px',
                                         cursor: 'pointer'
                                     }}

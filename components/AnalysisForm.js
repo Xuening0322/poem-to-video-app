@@ -20,7 +20,7 @@ const AnalysisForm = ({ onSubmit }) => {
       <textarea
         value={poem}
         onChange={(e) => setPoem(e.target.value)}
-        placeholder="Paste your poem here..."
+        placeholder="Type or paste your poem here..."
         rows="10"
         cols="50"
         className="analysis-textarea"
@@ -32,7 +32,7 @@ const AnalysisForm = ({ onSubmit }) => {
         disabled={isAnalyzing}
       >
         {isAnalyzing && <span className="loading-spinner" />}
-        {isAnalyzing ? 'Analyzing Poem...' : 'Analyze Poem'}
+        {isAnalyzing ? 'Analyzing Poem...' : '🔍 Analyze My Poem'}
       </button>
     </form>
   );

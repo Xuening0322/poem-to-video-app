@@ -32,12 +32,12 @@ export default function Gallery() {
         </Link>
       </nav>
 
-      <h1 className={styles.title}>Discover Your Generated Videos</h1>
+      <h1 className={styles.title}>Discover Generated Videos</h1>
       <p className={styles.description}>
-        Dive into a world where poetry meets visuals. Each video here represents a unique blend of art, storytelling, and technology – an exclusive experience of poetry brought to life through AI.
+        Experience the fusion of poetry, art, and technology. Each video transforms your words into a unique visual story, bringing the essence of your poem to life with AI-driven creativity.
       </p>
 
-      <h2 className={styles.subtitle}>Latest Creations</h2>
+      <h2 className={styles.subtitle}>Explore Recent Creations</h2>
       <VideoGallery setPageLoading={setPageLoading} />
     </div>
   );

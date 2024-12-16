@@ -44,14 +44,14 @@ export default function Home() {
 
   return (
     <div className="container">
-      <h1>🎵 Poem-to-Video Generation</h1>
-      <p>This app analyzes a poem to extract its core essence, themes, and emotions, then generates a music video that visually interprets the poem's narrative. 📜🎶</p>
-      <Link 
-          href="/gallery" 
-          className="text-blue-600 hover:text-blue-800 transition-colors"
-        >
-          View Gallery →
-        </Link>
+      <h1>🎥 Poem-to-Video Generator</h1>
+      <p>Transform your words into a captivating music video! ✨ This app analyzes your poem to uncover its core themes, emotions, and essence, then generates a music video that visually brings your narrative to life. 📜🎶</p>
+      <Link
+        href="/gallery"
+        className="text-blue-600 hover:text-blue-800 transition-colors"
+      >
+        View Gallery →
+      </Link>
       <SettingsSidebar settings={settings} onSettingsChange={handleSettingsChange} />
       <AnalysisForm onSubmit={handlePoemSubmit} />
       <DisplayAnalysis analysis={analysis} duration={settings.duration} poemText={poem} bpm={settings.bpm} videoStyle={settings.videoStyle} />

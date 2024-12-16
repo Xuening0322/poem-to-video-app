@@ -75,14 +75,14 @@ body {
 button {
   padding: 10px 20px;
   color: #fff;
-  background-color: #007bff;
+  background-color: #68bcf7;
   border: none;
   border-radius: var(--border-radius);
   cursor: pointer;
 }
 
 button:hover {
-  background-color: #0056b3;
+  background-color: #68bcf7;
 }
 
 
@@ -211,4 +211,14 @@ button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+:root {
+  --heading-color: #1a1a1a;
+  --text-color: #333333;
+  --text-secondary: #666666;
 }
