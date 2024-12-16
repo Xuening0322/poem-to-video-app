@@ -1,6 +1,7 @@
 import fetch from 'node-fetch';
 
-const BUCKET_URL = 'https://storage.googleapis.com/poem-to-video';
+const BUCKET_NAME = process.env.GOOGLE_CLOUD_BUCKET;
+const BUCKET_URL = `https://storage.googleapis.com/${BUCKET_NAME}`;
 
 function parseDate(dateString) {
   try {

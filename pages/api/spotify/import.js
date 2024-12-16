@@ -52,7 +52,7 @@ async function uploadToGCP(filePath, filename) {
 
       blobStream.on('finish', async () => {
         try {
-          const publicUrl = `https://storage.googleapis.com/poem-to-video/${encodeURIComponent(filename)}`;
+          const publicUrl = `https://storage.googleapis.com/${process.env.GOOGLE_CLOUD_BUCKET}/${encodeURIComponent(filename)}`;
           console.log('File uploaded successfully:', publicUrl);
           resolve(publicUrl);
         } catch (err) {
