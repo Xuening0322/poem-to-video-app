@@ -3,8 +3,42 @@ const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
 const fs = require('fs');
 const { IncomingForm } = require('formidable');
 const path = require('path');
+const { Storage } = require('@google-cloud/storage');
 
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
+
+// Initialize Google Cloud Storage based on environment
+const storage = process.env.NODE_ENV === 'production'
+  ? new Storage()
+  : new Storage({
+      projectId: process.env.GOOGLE_CLOUD_PROJECT,
+      credentials: {
+        client_email: process.env.GOOGLE_CLOUD_CLIENT_EMAIL,
+        private_key: process.env.GOOGLE_CLOUD_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      }
+    });
+
+const bucket = storage.bucket(process.env.GOOGLE_CLOUD_BUCKET);
+
+async function uploadToGCP(filePath, gcsFilename) {
+  try {
+    console.log('Starting upload to GCP:', gcsFilename);
+    
+    await bucket.upload(filePath, {
+      destination: gcsFilename,
+      metadata: {
+        contentType: 'audio/mpeg'
+      }
+    });
+
+    const publicUrl = `https://storage.googleapis.com/${process.env.GOOGLE_CLOUD_BUCKET}/${encodeURIComponent(gcsFilename)}`;
+    console.log('File uploaded successfully to GCP:', publicUrl);
+    return publicUrl;
+  } catch (error) {
+    console.error('GCP upload error:', error);
+    throw error;
+  }
+}
 
 export const config = {
   api: {
@@ -17,8 +51,11 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
+  const assetsDir = path.join(process.cwd(), 'public/assets');
+  let inputFilePath = null;
+  let outputFilePath = null;
+
   try {
-    const assetsDir = path.join(process.cwd(), 'public/assets');
     if (!fs.existsSync(assetsDir)) {
       fs.mkdirSync(assetsDir, { recursive: true });
     }
@@ -48,10 +85,13 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid start or end time' });
     }
 
-    const outputPath = path.join(assetsDir, 'trimmed_audio.mp3');
+    inputFilePath = audioFile.filepath;
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const outputFilename = `trimmed_${timestamp}.mp3`;
+    outputFilePath = path.join(assetsDir, outputFilename);
 
     await new Promise((resolve, reject) => {
-      let ffmpegCommand = ffmpeg(audioFile.filepath)
+      let ffmpegCommand = ffmpeg(inputFilePath)
         .toFormat('mp3')
         .setStartTime(startTime)
         .duration(endTime - startTime)
@@ -73,23 +113,30 @@ export default async function handler(req, res) {
           console.log('FFmpeg processing finished');
           resolve();
         })
-        .save(outputPath);
+        .save(outputFilePath);
     });
 
-    try {
-      fs.unlinkSync(audioFile.filepath);
-    } catch (err) {
-      console.error('Error cleaning up input file:', err);
+    let fileUrl;
+    if (process.env.NODE_ENV === 'production') {
+      try {
+        const gcsFilename = `trimmed-audio/${path.basename(outputFilename)}`;
+        fileUrl = await uploadToGCP(outputFilePath, gcsFilename);
+      } catch (uploadError) {
+        console.error('Failed to upload to GCP:', uploadError);
+        throw uploadError;
+      }
+    } else {
+      fileUrl = `/assets/${outputFilename}`;
     }
 
-    const fileUrl = '/assets/trimmed_audio.mp3';
-    res.status(200).json({ url: fileUrl });
+    res.status(200).send(fileUrl);
 
   } catch (error) {
-    console.error('Error handling upload:', error);
+    console.error('Error processing audio:', error);
+    
     res.status(500).json({ 
-      error: error.message || 'Failed to process audio',
-      details: error.toString()
+      error: 'Failed to process audio',
+      details: error.message || error.toString()
     });
   }
 }
