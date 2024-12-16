@@ -1,9 +1,9 @@
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
-const fs = require('fs');
 const { IncomingForm } = require('formidable');
-const path = require('path');
 const { Storage } = require('@google-cloud/storage');
+const fs = require('fs/promises');
+const path = require('path');
 
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
@@ -11,31 +11,50 @@ ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 const storage = process.env.NODE_ENV === 'production'
   ? new Storage()
   : new Storage({
-      projectId: process.env.GOOGLE_CLOUD_PROJECT,
-      credentials: {
-        client_email: process.env.GOOGLE_CLOUD_CLIENT_EMAIL,
-        private_key: process.env.GOOGLE_CLOUD_PRIVATE_KEY.replace(/\\n/g, '\n'),
-      }
-    });
+    projectId: process.env.GOOGLE_CLOUD_PROJECT,
+    credentials: {
+      client_email: process.env.GOOGLE_CLOUD_CLIENT_EMAIL,
+      private_key: process.env.GOOGLE_CLOUD_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    }
+  });
 
 const bucket = storage.bucket(process.env.GOOGLE_CLOUD_BUCKET);
 
-async function uploadToGCP(filePath, gcsFilename) {
+async function uploadToGCP(filePath, filename) {
   try {
-    console.log('Starting upload to GCP:', gcsFilename);
+    console.log('Starting upload for file:', filename);
+    const fileBuffer = await fs.readFile(filePath);
+    const blob = bucket.file(filename);
     
-    await bucket.upload(filePath, {
-      destination: gcsFilename,
-      metadata: {
-        contentType: 'audio/mpeg'
-      }
-    });
+    return new Promise((resolve, reject) => {
+      const blobStream = blob.createWriteStream({
+        resumable: false,
+        metadata: {
+          contentType: 'audio/mpeg'
+        }
+      });
 
-    const publicUrl = `https://storage.googleapis.com/${process.env.GOOGLE_CLOUD_BUCKET}/${encodeURIComponent(gcsFilename)}`;
-    console.log('File uploaded successfully to GCP:', publicUrl);
-    return publicUrl;
+      blobStream.on('error', (err) => {
+        console.error('Stream error:', err);
+        reject(err);
+      });
+
+      blobStream.on('finish', async () => {
+        try {
+          const publicUrl = `https://storage.googleapis.com/${process.env.GOOGLE_CLOUD_BUCKET}/${encodeURIComponent(filename)}`;
+          console.log('File uploaded successfully:', publicUrl);
+          resolve(publicUrl);
+        } catch (err) {
+          console.error('Error getting public URL:', err);
+          reject(err);
+        }
+      });
+
+      console.log('Writing buffer to stream...');
+      blobStream.end(fileBuffer);
+    });
   } catch (error) {
-    console.error('GCP upload error:', error);
+    console.error('Upload error:', error);
     throw error;
   }
 }
@@ -56,9 +75,8 @@ export default async function handler(req, res) {
   let outputFilePath = null;
 
   try {
-    if (!fs.existsSync(assetsDir)) {
-      fs.mkdirSync(assetsDir, { recursive: true });
-    }
+    // Create assets directory if it doesn't exist
+    await fs.mkdir(assetsDir, { recursive: true });
 
     const form = new IncomingForm({
       uploadDir: assetsDir,
@@ -87,9 +105,10 @@ export default async function handler(req, res) {
 
     inputFilePath = audioFile.filepath;
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const outputFilename = `trimmed_${timestamp}.mp3`;
+    const outputFilename = `trimmed-${timestamp}.mp3`;
     outputFilePath = path.join(assetsDir, outputFilename);
 
+    // Process audio with FFmpeg
     await new Promise((resolve, reject) => {
       let ffmpegCommand = ffmpeg(inputFilePath)
         .toFormat('mp3')
@@ -118,23 +137,50 @@ export default async function handler(req, res) {
 
     let fileUrl;
     if (process.env.NODE_ENV === 'production') {
-      try {
-        const gcsFilename = `trimmed-audio/${path.basename(outputFilename)}`;
-        fileUrl = await uploadToGCP(outputFilePath, gcsFilename);
-      } catch (uploadError) {
-        console.error('Failed to upload to GCP:', uploadError);
-        throw uploadError;
-      }
+      // Upload processed file to GCP in production
+      const gcsFilename = `trimmed-audio/${outputFilename}`;
+      fileUrl = await uploadToGCP(outputFilePath, gcsFilename);
     } else {
-      fileUrl = `/assets/${outputFilename}`;
+      // Use local path in development
+      fileUrl = '/assets/' + outputFilename;
     }
 
-    res.status(200).send(fileUrl);
+    // Clean up input file
+    try {
+      if (inputFilePath && fs.existsSync(inputFilePath)) {
+        await fs.unlink(inputFilePath);
+      }
+      
+      // In production, also clean up the processed file after upload
+      if (process.env.NODE_ENV === 'production' && outputFilePath && fs.existsSync(outputFilePath)) {
+        await fs.unlink(outputFilePath);
+      }
+    } catch (err) {
+      console.error('Error cleaning up files:', err);
+    }
+
+    return res.status(200).json({
+      url: fileUrl,
+      filename: outputFilename,
+      createdAt: new Date().toISOString()
+    });
 
   } catch (error) {
     console.error('Error processing audio:', error);
     
-    res.status(500).json({ 
+    // Clean up any leftover files on error
+    try {
+      if (inputFilePath && fs.existsSync(inputFilePath)) {
+        await fs.unlink(inputFilePath);
+      }
+      if (outputFilePath && fs.existsSync(outputFilePath)) {
+        await fs.unlink(outputFilePath);
+      }
+    } catch (cleanupError) {
+      console.error('Cleanup error:', cleanupError);
+    }
+
+    return res.status(500).json({ 
       error: 'Failed to process audio',
       details: error.message || error.toString()
     });

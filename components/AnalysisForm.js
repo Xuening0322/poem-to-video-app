@@ -3,10 +3,16 @@ import React, { useState } from 'react';
 
 const AnalysisForm = ({ onSubmit }) => {
   const [poem, setPoem] = useState('');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSubmit(poem);
+    setIsAnalyzing(true);
+    try {
+      await onSubmit(poem);
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   return (
@@ -18,8 +24,16 @@ const AnalysisForm = ({ onSubmit }) => {
         rows="10"
         cols="50"
         className="analysis-textarea"
+        disabled={isAnalyzing}
       />
-      <button type="submit" className="analysis-button">Analyze Poem</button>
+      <button 
+        type="submit" 
+        className={`analysis-button ${isAnalyzing ? 'button-disabled' : ''}`}
+        disabled={isAnalyzing}
+      >
+        {isAnalyzing && <span className="loading-spinner" />}
+        {isAnalyzing ? 'Analyzing Poem...' : 'Analyze Poem'}
+      </button>
     </form>
   );
 };
