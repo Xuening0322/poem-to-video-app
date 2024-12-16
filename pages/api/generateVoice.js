@@ -3,17 +3,22 @@ import path from "path";
 import fs from "fs/promises";
 import { Storage } from '@google-cloud/storage';
 
-// Initialize Google Cloud Storage
-const storage = new Storage({
-  keyFilename: path.join(process.cwd(), 'gcp-key.json')
-});
-const bucket = storage.bucket('poem-to-video');
+const storage = process.env.NODE_ENV === 'production'
+  ? new Storage()
+  : new Storage({
+    projectId: process.env.GOOGLE_CLOUD_PROJECT,
+    credentials: {
+      client_email: process.env.GOOGLE_CLOUD_CLIENT_EMAIL,
+      private_key: process.env.GOOGLE_CLOUD_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    }
+  });
+
+const bucket = storage.bucket(process.env.GOOGLE_CLOUD_BUCKET);
 
 async function uploadToGCP(filePath, gcsFilename) {
   try {
     console.log('Starting upload for file:', gcsFilename);
-    
-    // Upload file to GCS
+
     await bucket.upload(filePath, {
       destination: gcsFilename,
       metadata: {
@@ -21,7 +26,7 @@ async function uploadToGCP(filePath, gcsFilename) {
       }
     });
 
-    const publicUrl = `https://storage.googleapis.com/poem-to-video/${encodeURIComponent(gcsFilename)}`;
+    const publicUrl = `https://storage.googleapis.com/${process.env.GOOGLE_CLOUD_BUCKET}/${encodeURIComponent(gcsFilename)}`;
     console.log('File uploaded successfully:', publicUrl);
     return publicUrl;
   } catch (error) {
@@ -37,7 +42,7 @@ export default async function handler(req, res) {
   }
 
   const { poem } = req.body;
-  
+
   if (!poem) {
     return res.status(400).json({ message: 'Poem text is required' });
   }
@@ -46,6 +51,8 @@ export default async function handler(req, res) {
     console.error('XI_API_KEY environment variable is not set');
     return res.status(500).json({ message: 'Server configuration error' });
   }
+
+  const assetsDir = path.join(process.cwd(), 'public/assets');
 
   try {
     let poemText = poem.replace(/([.,;:])/g, "---------------");
@@ -66,7 +73,6 @@ export default async function handler(req, res) {
     });
 
     // Save locally first
-    const assetsDir = path.join(process.cwd(), 'public/assets');
     await fs.mkdir(assetsDir, { recursive: true });
     const localFilename = 'generatedVoice.mp3';
     const filePath = path.join(assetsDir, localFilename);
@@ -77,21 +83,41 @@ export default async function handler(req, res) {
       // Generate timestamp-based filename for GCS
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const gcsFilename = `voices/${timestamp}-voice.mp3`;
-
+    
       // Upload the local file to GCP
       const publicUrl = await uploadToGCP(filePath, gcsFilename);
       
-      // Still return local URL for now
-      res.status(200).send('/assets/generatedVoice.mp3');
+      if (process.env.NODE_ENV === 'production') {
+        // In production, return the GCS public URL directly
+        res.status(200).send(publicUrl);
+      } else {
+        // In development, return the local URL directly
+        res.status(200).send('/assets/generatedVoice.mp3');
+      }
+    
     } catch (uploadError) {
-      console.error('GCS upload failed, falling back to local URL:', uploadError);
-      // If GCS upload fails, return just the local URL
-      res.status(200).send('/assets/generatedVoice.mp3');
+      console.error('GCS upload failed:', uploadError);
+      
+      if (process.env.NODE_ENV === 'production') {
+        // In production, if GCS upload fails, return an error
+        throw uploadError;
+      } else {
+        // In development, fall back to local URL
+        res.status(200).send('/assets/generatedVoice.mp3');
+      }
     }
 
   } catch (error) {
     console.error('Error:', error);
-    res.status(500).json({ 
+
+    // Cleanup assets directory on error
+    try {
+      await fs.rm(assetsDir, { recursive: true, force: true });
+    } catch (cleanupError) {
+      console.error('Cleanup error:', cleanupError);
+    }
+
+    return res.status(500).json({
       message: 'Error in file operations',
       error: error.message
     });
