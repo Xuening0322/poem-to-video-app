@@ -7,7 +7,6 @@ const path = require('path');
 
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
-// Initialize Google Cloud Storage based on environment
 const storage = process.env.NODE_ENV === 'production'
   ? new Storage()
   : new Storage({
@@ -73,7 +72,6 @@ export default async function handler(req, res) {
   const assetsDir = path.join(process.cwd(), 'public/assets');
 
   try {
-    // Create assets directory if it doesn't exist
     await fs.mkdir(assetsDir, { recursive: true });
 
     const form = new IncomingForm({
@@ -101,11 +99,16 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid start or end time' });
     }
 
+    // 固定的输出文件名用于开发环境
+    const devOutputFilename = 'trimmed_audio.mp3';
+    // 动态的输出文件名用于生产环境
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const outputFilename = `trimmed-${timestamp}.mp3`;
+    const prodOutputFilename = `trimmed-${timestamp}.mp3`;
+    
+    // 根据环境选择输出文件名
+    const outputFilename = process.env.NODE_ENV === 'production' ? prodOutputFilename : devOutputFilename;
     const outputFilePath = path.join(assetsDir, outputFilename);
 
-    // Process audio with FFmpeg
     await new Promise((resolve, reject) => {
       let ffmpegCommand = ffmpeg(audioFile.filepath)
         .toFormat('mp3')
@@ -134,13 +137,14 @@ export default async function handler(req, res) {
 
     let fileUrl;
     if (process.env.NODE_ENV === 'production') {
-      // Upload processed file to GCP in production
-      const gcsFilename = `trimmed-audio/${outputFilename}`;
+      const gcsFilename = `trimmed-audio/${prodOutputFilename}`;
       fileUrl = await uploadToGCP(outputFilePath, gcsFilename);
     } else {
-      // Use local path in development
-      fileUrl = '/assets/' + outputFilename;
+      fileUrl = '/assets/' + devOutputFilename;
     }
+
+    console.log('Environment:', process.env.NODE_ENV);
+    console.log('File URL:', fileUrl);
 
     return res.status(200).json({
       url: fileUrl,

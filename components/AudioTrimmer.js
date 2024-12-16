@@ -150,26 +150,25 @@ const AudioTrimmer = ({ onSave, targetDuration, initialAudioUrl }) => {
     const handleTrimAndSave = async () => {
         setIsProcessing(true);
         setError(null);
-
+    
         try {
             const formData = new FormData();
             formData.append('audio', audioFile);
             formData.append('startTime', startTime.toString());
             formData.append('endTime', endTime.toString());
-
+    
             const response = await fetch('/api/trimAudio', {
                 method: 'POST',
                 body: formData,
             });
-
+    
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.error || 'Failed to process audio');
             }
-
-            const blob = await response.blob();
-            const url = URL.createObjectURL(blob);
-            onSave?.(url);
+    
+            const data = await response.json();
+            onSave?.(data.url);
             
         } catch (error) {
             setError(error.message || 'Error processing audio');
