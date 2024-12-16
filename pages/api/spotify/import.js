@@ -8,11 +8,17 @@ import path from 'path';
 
 const execAsync = promisify(exec);
 
-// Initialize Google Cloud Storage
-const storage = new Storage({
-  keyFilename: path.join(process.cwd(), 'gcp-key.json')
-});
-const bucket = storage.bucket('poem-to-video');
+const storage = process.env.NODE_ENV === 'production'
+  ? new Storage()
+  : new Storage({
+    projectId: process.env.GOOGLE_CLOUD_PROJECT,
+    credentials: {
+      client_email: process.env.GOOGLE_CLOUD_CLIENT_EMAIL,
+      private_key: process.env.GOOGLE_CLOUD_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    }
+  });
+
+const bucket = storage.bucket(process.env.GOOGLE_CLOUD_BUCKET);
 
 async function findMp3File(directory) {
   try {
