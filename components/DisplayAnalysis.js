@@ -284,7 +284,7 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
 
             const requestBody = {
                 videoUrl: videoUrl,
-                musicUrl: musicUrlToUse, // Use the appropriate URL
+                musicUrl: musicUrlToUse,
                 voiceUrl: voiceUrl,
                 metadata: {
                     title: prompt?.substring(0, 50) + '...' || 'Untitled',
@@ -301,7 +301,6 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
                 }
             };
 
-            // Process video
             const response = await fetch('/api/processVideo', {
                 method: 'POST',
                 headers: {
@@ -318,30 +317,8 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
             const result = await response.json();
             console.log('Video processed:', result);
 
-            const fullVideoUrl = result.url.startsWith('http')
-                ? result.url
-                : `${window.location.origin}${result.url}`;
-
-            // Save to gallery with updated metadata
-            const saveResponse = await fetch('/api/saveVideo', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    videoUrl: fullVideoUrl,
-                    metadata: requestBody.metadata // Use the same metadata from the process request
-                })
-            });
-
-            if (!saveResponse.ok) {
-                const errorData = await saveResponse.json();
-                throw new Error(errorData.message || 'Failed to save video to gallery');
-            }
-
-            const savedVideo = await saveResponse.json();
-            setMovieUrl(savedVideo.url);
-            setMovieKey(prevKey => prevKey + 1); // Increment the key when new movie is generated
+            setMovieUrl(result.url);
+            setMovieKey(prevKey => prevKey + 1);
 
         } catch (error) {
             console.error('Error generating movie:', error);
@@ -489,39 +466,6 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
                     </div>
                 )}
 
-                {spotifyTrack && !showAudioTrimmer && (
-                    <div style={{ marginTop: '10px' }}>
-                        <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '10px',
-                            marginBottom: '10px'
-                        }}>
-                            <p>Imported: {spotifyTrack.name} - {spotifyTrack.artists[0].name}</p>
-                            <button
-                                onClick={() => {
-                                    setShowSpotifyInput(false);
-                                    setShowAudioTrimmer(true);
-                                }}
-                                style={{
-                                    padding: '4px 8px',
-                                    fontSize: '0.9em',
-                                    backgroundColor: '#007bff',
-                                    border: '1px solid #007bff',
-                                    borderRadius: '4px',
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                Want to trim this track?
-                            </button>
-                        </div>
-                        <audio key={audioKey} controls>
-                            <source src={musicUrl} type="audio/mpeg" />
-                            Your browser does not support the audio element.
-                        </audio>
-                    </div>
-                )}
-
                 {showAudioTrimmer && (
                     <div style={{ marginTop: '20px', padding: '20px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
@@ -553,30 +497,42 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
                     </div>
                 )}
 
-                {spotifyTrack && (
-                    <div style={{ marginTop: '10px' }}>
-                        <p>Imported: {spotifyTrack.name} - {spotifyTrack.artists[0].name}</p>
+                {!showAudioTrimmer && musicUrl && (
+                    <div style={{ marginTop: '20px' }}>
+                        {spotifyTrack && (
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px',
+                                marginBottom: '10px'
+                            }}>
+                                <p>Imported: {spotifyTrack.name} - {spotifyTrack.artists[0].name}</p>
+                                <button
+                                    onClick={() => {
+                                        setShowSpotifyInput(false);
+                                        setShowAudioTrimmer(true);
+                                    }}
+                                    style={{
+                                        padding: '4px 8px',
+                                        fontSize: '0.9em',
+                                        backgroundColor: '#007bff',
+                                        border: '1px solid #007bff',
+                                        borderRadius: '4px',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    Want to trim this track?
+                                </button>
+                            </div>
+                        )}
+                        <audio key={audioKey} controls>
+                            <source src={musicUrl} type="audio/mpeg" />
+                            Your browser does not support the audio element.
+                        </audio>
                     </div>
                 )}
+
             </div>
-
-
-            {musicAnalysis && (
-                <div style={{ marginTop: '20px', marginBottom: '20px' }}>
-                    <h4>Music Analysis:</h4>
-                    <p>Tempo: {musicAnalysis.tempo} BPM</p>
-                    <p>Energy: {(musicAnalysis.energy * 100).toFixed(1)}%</p>
-                    <p>Mood: {(musicAnalysis.valence * 100).toFixed(1)}%</p>
-                    <p>Danceability: {(musicAnalysis.danceability * 100).toFixed(1)}%</p>
-                    <p>Acousticness: {(musicAnalysis.acousticness * 100).toFixed(1)}%</p>
-                    <p>Instrumentalness: {(musicAnalysis.instrumentalness * 100).toFixed(1)}%</p>
-                    <p>Liveness: {(musicAnalysis.liveness * 100).toFixed(1)}%</p>
-                    <p>Loudness: {musicAnalysis.loudness} dB</p>
-                    <p>Speechiness: {(musicAnalysis.speechiness * 100).toFixed(1)}%</p>
-                    <p>Key: {musicAnalysis.key}</p>
-                    <p>Mode: {musicAnalysis.mode === 1 ? 'Major' : 'Minor'}</p>
-                </div>
-            )}
 
             <h3>Video Generation</h3>
             <button
