@@ -542,7 +542,7 @@ const DisplayAnalysis = ({ analysis, duration, poemText, bpm, videoStyle }) => {
                         <AudioTrimmer
                             onSave={(trimmedAudioUrl) => {
                                 setRealBlobUrl(trimmedAudioUrl);
-                                setMusicUrl('/assets/trimmed_audio.mp3');
+                                setMusicUrl(trimmedAudioUrl);
                                 setMusicSource('uploaded');
                                 setAudioKey(prevKey => prevKey + 1);
                                 setShowAudioTrimmer(false);
