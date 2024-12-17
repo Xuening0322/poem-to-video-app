@@ -99,13 +99,10 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid start or end time' });
     }
 
-    // 固定的输出文件名用于开发环境
     const devOutputFilename = 'trimmed_audio.mp3';
-    // 动态的输出文件名用于生产环境
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const prodOutputFilename = `trimmed-${timestamp}.mp3`;
     
-    // 根据环境选择输出文件名
     const outputFilename = process.env.NODE_ENV === 'production' ? prodOutputFilename : devOutputFilename;
     const outputFilePath = path.join(assetsDir, outputFilename);
 

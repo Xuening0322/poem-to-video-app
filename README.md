@@ -35,7 +35,6 @@
      npm install
      ```
 
----
 
 ### 2. **Environment Setup**
    - Create a `.env` file in the root directory.
@@ -43,9 +42,9 @@
 
      ```plaintext
      # Google Cloud Project Configuration
-     GOOGLE_CLOUD_PROJECT=poem-to-music-app
-     GOOGLE_CLOUD_BUCKET=poem-to-video
-     GOOGLE_CLOUD_CLIENT_EMAIL=poem-to-music-gcs@poem-to-music-app.iam.gserviceaccount.com
+     GOOGLE_CLOUD_PROJECT=your-gcp-project
+     GOOGLE_CLOUD_BUCKET=your-gcp-bucket
+     GOOGLE_CLOUD_CLIENT_EMAIL=your-service-account-email
      GOOGLE_CLOUD_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\nYOUR_PRIVATE_KEY_HERE\n-----END PRIVATE KEY-----\n
 
      # Spotify API Configuration
@@ -63,14 +62,22 @@
 
    - Replace sensitive values (`YOUR_PRIVATE_KEY_HERE`, `your_openai_api_key`, etc.) with the actual keys.
 
----
+   - **Environment-specific Setup**:  
+     - If running in **local development**, set:
+       ```plaintext
+       NODE_ENV=development
+       ```
+     - If deploying to **production**, update the environment variable to:
+       ```plaintext
+       NODE_ENV=production
+       ```
+
 
 ### 3. **Install Required Tools Locally**
 
 1. **FFmpeg**  
    - FFmpeg is used for audio and video processing (e.g., trimming, combining media).  
-   - Download and install FFmpeg from the official website:  
-     [https://www.ffmpeg.org/download.html](https://www.ffmpeg.org/download.html)  
+   - Download and install FFmpeg from its [official website](https://www.ffmpeg.org/download.html).
 
    - **Verify Installation**: Run the following command in your terminal:  
      ```bash
@@ -78,10 +85,10 @@
      ```
 
 2. **spotify-dl**  
-   - `spotify-dl` is a tool for downloading Spotify tracks.  
-   - Install `spotify-dl` using `pip` (ensure Python is installed):  
+   - [spotify-dl](https://github.com/SwapnilSoni1999/spotify-dl) is a tool for downloading Spotify tracks.  
+   - Install `spotify-dl` using `npm` (ensure npm is installed):  
      ```bash
-     pip install spotify-dl
+     npm install -g https://github.com/swapnilsoni1999/spotify-dl
      ```
 
    - **Verify Installation**:  
@@ -90,7 +97,6 @@
      ```
 
 
----
 
 ### 4. **Run the Development Server**
    - Start the local server:
@@ -107,13 +113,13 @@
    - Extracts literary elements such as themes, emotions, and key literals using **OpenAI** API.
 
 2. **Music Generation**  
-   - Generates music tailored to the poem’s analysis with adjustable BPM and duration.
+   - Generates music tailored to the poem’s analysis with adjustable BPM and duration using Meta's [MusicGen](https://github.com/facebookresearch/audiocraft) via **Replicate API**.
 
 3. **Voice Narration**  
    - Converts poem text into high-quality voice narration via **Eleven Labs** API.
 
 4. **Video Generation**  
-   - Creates visually stylized videos synced to the generated music using **Replicate API**.
+   - Creates visually stylized videos synced to the generated music using **Stable Diffusion** via **Replicate API**.
 
 5. **Spotify Integration**  
    - Allows users to:
@@ -137,26 +143,29 @@
 │   ├── AudioTrimmer.js        # Audio trimming functionality
 │   ├── DisplayAnalysis.js     # Displays analysis and controls for media generation
 │   ├── SettingsSidebar.js     # Sidebar for user settings
-│   ├── VideoGallery.js        # Displays generated videos in a gallery view
+│   └── VideoGallery.js        # Displays generated videos in a gallery view
 │
 ├── pages/                     # Next.js routing and API handlers
 │   ├── index.js               # Main page for poem-to-video generation
 │   ├── gallery.js             # Page for viewing the generated video gallery
 │   ├── audiotrimmer.js        # Page for audio trimming tools
+│   ├── _app.js                # Custom App component for global setups
 │   ├── api/                   # Backend API routes
 │   │   ├── analyzePoem.js     # Handles poem analysis
 │   │   ├── generateMusic.js   # Generates music from analysis
 │   │   ├── generateVideo.js   # Generates video with prompts
+│   │   ├── generateVideoPrompts.js # Generates video prompts based on poem analysis
 │   │   ├── generateVoice.js   # Generates voice narration
+│   │   ├── getVideos.js       # Fetches video gallery content
 │   │   ├── processVideo.js    # Combines media into a final video
-│   │   ├── spotify/           # Spotify track import endpoints
+│   │   ├── remixMusic.js      # Handles music remixing (experimental)
+│   │   ├── trimAudio.js       # Handles audio trimming
+│   │   ├── spotify/
 │   │   │   └── import.js      # Handles Spotify track importing
 │
-├── public/                    # Static files (SVGs, assets)
-│   ├── uploads/               # Directory for uploaded files
-│
-└── styles/                    # CSS Modules for styling components
-    ├── globals.css            # Global styles
-    ├── AudioTrimmer.module.css
-    └── VideoGallery.module.css
+├── styles/                    # CSS Modules
+│   ├── globals.css            # Global styles
+│   ├── AudioTrimmer.module.css # Styles for the AudioTrimmer component
+│   ├── Gallery.module.css     # Styles for the video gallery page
+│   └── VideoGallery.module.css # Styles for the VideoGallery component
   ```
